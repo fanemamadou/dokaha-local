@@ -1,0 +1,144 @@
+# gestion/views.py
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.shortcuts import render, redirect
+from django.db.models import Sum
+from django.utils import timezone
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login
+from django.contrib import messages
+from django.http import HttpResponseRedirect
+from datetime import timedelta
+from .models import MouvementStock, Vente, ProductionOeufs, Depense, Sante
+from .forms import ProductionForm
+
+
+# 🔐 CONNEXION ANTI-LOOP
+def simple_login(request):
+    if request.user.is_authenticated:
+        return HttpResponseRedirect('/dashboard/')
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '')
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            request.session.modified = True
+            request.session.save()
+            messages.success(request, f'✅ Bienvenue, {username} !')
+
+            response = HttpResponseRedirect('/dashboard/')
+            response['Cache-Control'] = 'no-store'
+            response['Vary'] = 'Cookie'
+            return response
+        else:
+            messages.error(request, '❌ Identifiant ou mot de passe incorrect.')
+
+    return render(request, 'gestion/login.html')
+
+
+# 📊 DASHBOARD
+@login_required
+def dashboard(request):
+    stock_pl, stock_u = MouvementStock.stock_actuel()
+    today = timezone.now().date()
+    mois, annee = today.month, today.year
+
+    agg_ventes = Vente.objects.filter(date__month=mois, date__year=annee).aggregate(total=Sum('montant_total'))
+    ventes_mois = agg_ventes['total'] if agg_ventes['total'] is not None else 0
+    nb_ventes = Vente.objects.filter(date__month=mois, date__year=annee).count()
+
+    agg_prod = ProductionOeufs.objects.filter(date__month=mois, date__year=annee).aggregate(total=Sum('nombre_oeufs'))
+    prod_oeufs = agg_prod['total'] if agg_prod['total'] is not None else 0
+
+    chart_labels, chart_data = [], []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        p = ProductionOeufs.objects.filter(date=d).aggregate(t=Sum('nombre_oeufs'))
+        val = p['t'] if p['t'] else 0
+        chart_labels.append(d.strftime('%d/%m'))
+        chart_data.append(val // 30)
+
+    context = {
+        'stock_plateaux': stock_pl, 'stock_unites': stock_u,
+        'ventes_mois': ventes_mois, 'nb_ventes': nb_ventes,
+        'plateaux_prod': prod_oeufs // 30,
+        'chart_labels': chart_labels, 'chart_data': chart_data,
+    }
+    return render(request, 'gestion/dashboard.html', context)
+
+
+# 📈 BILAN (Réservé Gérants/Admin)
+# ✅ Seuls DG, Directeurs et Superuser accèdent au Bilan
+def is_bilan_allowed(user):
+    return user.is_superuser or user.groups.filter(name__in=['DG', 'Directeurs']).exists()
+@login_required
+def bilan(request):
+    is_gerant = request.user.is_superuser or request.user.groups.filter(name='Gerants').exists()
+    if not is_gerant:
+        messages.error(request, "⛔ Accès au Bilan réservé à la direction.")
+        return redirect('/')
+
+    debut = request.GET.get('debut')
+    fin = request.GET.get('fin')
+    if not debut or not fin:
+        today = timezone.now().date()
+        debut = today.replace(day=1).isoformat()
+        fin = today.isoformat()
+
+    tv = Vente.objects.filter(date__range=[debut, fin]).aggregate(Sum('montant_total'))['montant_total__sum'] or 0
+    td = Depense.objects.filter(date__range=[debut, fin]).aggregate(Sum('montant'))['montant__sum'] or 0
+    ts = Sante.objects.filter(date__range=[debut, fin]).aggregate(Sum('cout'))['cout__sum'] or 0
+    to = ProductionOeufs.objects.filter(date__range=[debut, fin]).aggregate(Sum('nombre_oeufs'))['nombre_oeufs__sum'] or 0
+
+    context = {
+        'debut': debut, 'fin': fin,
+        'total_ventes': tv, 'total_depenses': td,
+        'total_sante': ts, 'total_charges': td + ts,
+        'benefice': tv - (td + ts),
+        'total_oeufs': to,
+        'plateaux_oeufs': to // 30,
+        'reste_oeufs': to % 30,
+    }
+    return render(request, 'gestion/bilan.html', context)
+
+
+# 🥚 SAISIE PRODUCTION
+@login_required
+def production_add(request):
+(request):
+    if request.method == 'POST':
+        form = ProductionForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "✅ Collecte enregistrée")
+            return redirect('dashboard')
+    else:
+        form = ProductionForm()
+    return render(request, 'gestion/production_form.html', {'form': form})
+@login_required
+def vente_add(request):
+    if request.method == 'POST':
+        form = VenteForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ Vente enregistrée !')
+            return redirect('/')
+    else:
+        form = VenteForm()
+    return render(request, 'gestion/vente_add.html', {'form': form})
+
+
+# 🔧 SAISIE DÉPENSE
+@login_required
+def depense_add(request):
+    if request.method == 'POST':
+        form = DepenseForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, '✅ Dépense enregistrée !')
+            return redirect('/')
+    else:
+        form = DepenseForm()
+    return render(request, 'gestion/depense_add.html', {'form': form})

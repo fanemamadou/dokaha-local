@@ -1,0 +1,53 @@
+{% extends 'gestion/base.html' %}
+{% block title %}{{ title }} - DOKAHA{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Date *</label>
+                        <input type="date" name="date" class="form-control" required value="{{ today }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Client</label>
+                        <input type="text" name="client" class="form-control" placeholder="Ex: Marché Adjamé, Mme Koné...">
+                    </div>
+                    <div class="row">
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Quantité (plateaux) *</label>
+                            <input type="number" name="quantite" class="form-control" step="1" min="1" required>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <label class="form-label">Prix unitaire (F) *</label>
+                            <input type="number" name="prix_unitaire" class="form-control" step="1" min="0" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Mode de paiement</label>
+                        <select name="mode_paiement" class="form-select">
+                            <option value="espece">💵 Espèces</option>
+                            <option value="mobile">📱 Mobile Money</option>
+                            <option value="cheque">🧾 Chèque</option>
+                            <option value="credit">🔄 Crédit client</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Note interne</label>
+                        <textarea name="note" class="form-control" rows="2" placeholder="Référence bon, livraison..."></textarea>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-warning">✅ Enregistrer la vente</button>
+                        <a href="{% url 'vente_choice' %}" class="btn btn-outline-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

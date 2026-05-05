@@ -1,0 +1,41 @@
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-brand">🐔 Tropic <span>Volaille</span></div>
+  <nav class="sidebar-nav">
+    {% if user.is_authenticated %}
+      <a href="/dashboard/" class="nav-item {% if '/dashboard/' in request.path %}active{% endif %}"><i class="fas fa-chart-line me-2"></i> Dashboard</a>
+      
+      {% if "DG" in user_groups or is_admin %}
+        <a href="/dg/" class="nav-item {% if '/dg/' in request.path %}active{% endif %}"><i class="fas fa-user-tie me-2"></i> Bilan DG</a>
+      {% endif %}
+      
+      {% if "Directeur" in user_groups or "Directeurs" in user_groups or is_admin or "Vendeur" in user_groups or "Vendeurs" in user_groups or "Ouvrier" in user_groups or "Ouvriers" in user_groups %}
+        <a href="/stock/" class="nav-item {% if '/stock/' in request.path %}active{% endif %}"><i class="fas fa-boxes-stacked me-2"></i> Stock & Logistique</a>
+      {% endif %}
+      
+      {% if "Vendeur" in user_groups or "Vendeurs" in user_groups or "Directeur" in user_groups or "Directeurs" in user_groups or is_admin %}
+        <a href="/vente/add/" class="nav-item {% if '/vente/' in request.path %}active{% endif %}"><i class="fas fa-hand-holding-dollar me-2"></i> Ventes & Clients</a>
+      {% endif %}
+      
+      {% if "Ouvrier" in user_groups or "Ouvriers" in user_groups or "Directeur" in user_groups or "Directeurs" in user_groups or is_admin or "Superviseur" in user_groups or "Superviseurs" in user_groups %}
+        <a href="/production/" class="nav-item {% if '/production/' in request.path %}active{% endif %}"><i class="fas fa-egg me-2"></i> Production & Collecte</a>
+      {% endif %}
+      
+      {% if "Veterinaires" in user_groups or "Vétérinaire" in user_groups or is_admin or "Directeur" in user_groups or "Directeurs" in user_groups %}
+        <a href="/sante/" class="nav-item {% if '/sante/' in request.path %}active{% endif %}"><i class="fas fa-heart-pulse me-2"></i> Santé & Élevage</a>
+      {% endif %}
+      
+      {% if is_admin or "DG" in user_groups %}
+        <div class="nav-divider"></div>
+        <a href="/admin/" class="nav-item"><i class="fas fa-gear me-2"></i> Administration</a>
+      {% endif %}
+    {% else %}
+      <a href="/admin/login/" class="nav-item"><i class="fas fa-sign-in-alt me-2"></i> Connexion Staff</a>
+    {% endif %}
+  </nav>
+  <div class="sidebar-footer">
+    {% if user.is_authenticated %}
+      <small class="d-block text-muted">👤 {{ user.get_username }}</small>
+      <a href="/admin/logout/" class="btn btn-sm btn-outline-light mt-2 w-100">Déconnexion</a>
+    {% endif %}
+  </div>
+</div>

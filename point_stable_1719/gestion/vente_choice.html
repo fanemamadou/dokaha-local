@@ -1,0 +1,50 @@
+{% extends 'gestion/base.html' %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h3 class="mb-4">{{ title }}</h3>
+    <p class="text-muted mb-4">Sélectionnez le type de vente à enregistrer :</p>
+    
+    <div class="row g-4 justify-content-center">
+        <!-- 🥚 Œufs -->
+        <div class="col-md-4">
+            <a href="/vente/oeufs/" class="card text-decoration-none h-100 shadow-sm border-warning hover-scale">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-egg fa-4x text-warning mb-3"></i>
+                    <h4 class="card-title">Œufs</h4>
+                    <p class="text-muted">Vente de plateaux d'œufs</p>
+                    <span class="btn btn-outline-warning btn-sm">Saisir →</span>
+                </div>
+            </a>
+        </div>
+        
+        <!-- 🐔 Poulets -->
+        <div class="col-md-4">
+            <a href="/vente/poulets/" class="card text-decoration-none h-100 shadow-sm border-danger hover-scale">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-drumstick-bite fa-4x text-danger mb-3"></i>
+                    <h4 class="card-title">Poulets & Poules</h4>
+                    <p class="text-muted">Vente de volailles vives ou abattues</p>
+                    <span class="btn btn-outline-danger btn-sm">Saisir →</span>
+                </div>
+            </a>
+        </div>
+        
+        <!-- 📦 Autres -->
+        <div class="col-md-4">
+            <a href="/vente/autres/" class="card text-decoration-none h-100 shadow-sm border-info hover-scale">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-box-open fa-4x text-info mb-3"></i>
+                    <h4 class="card-title">Autres Produits</h4>
+                    <p class="text-muted">Fumier, matériel, services...</p>
+                    <span class="btn btn-outline-info btn-sm">Saisir →</span>
+                </div>
+            </a>
+        </div>
+    </div>
+    
+    <div class="text-center mt-4">
+        <a href="/vente/" class="text-decoration-none text-muted">← Retour à l'historique</a>
+    </div>
+</div>
+<style>.hover-scale:hover{transform:translateY(-4px);transition:0.2s;cursor:pointer}</style>
+{% endblock %}

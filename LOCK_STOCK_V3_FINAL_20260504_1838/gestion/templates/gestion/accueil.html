@@ -1,0 +1,54 @@
+{% extends "gestion/base.html" %}
+{% block title %}Bienvenue - DOKAHA{% endblock %}
+{% block content %}
+<style>
+  .hero-bg { background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%); color: white; padding: 80px 0 60px; text-align: center; }
+  .feature-card { transition: transform 0.2s; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+  .feature-card:hover { transform: translateY(-5px); }
+  .cta-btn { padding: 12px 30px; font-weight: bold; border-radius: 30px; font-size: 1.1rem; }
+</style>
+
+<div class="hero-bg">
+    <div class="container">
+        <h1 class="display-4 fw-bold mb-3">🐔 Bienvenue sur DOKAHA</h1>
+        <p class="lead mb-4">Gestion intelligente de votre production avicole. <br>Saisie rapide, calculs automatiques, suivi en temps réel.</p>
+        {% if user.is_authenticated %}
+            <a href="{% url 'dashboard' %}" class="btn btn-light btn-lg cta-btn">📊 Accéder au Tableau de Bord</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="btn btn-warning btn-lg cta-btn text-dark">🔑 Se Connecter</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row g-4 text-center">
+        <div class="col-md-4">
+            <div class="card feature-card h-100 p-4">
+                <div class="card-body">
+                    <h2 class="fs-1 mb-3">🥚</h2>
+                    <h5 class="fw-bold">Collecte Simplifiée</h5>
+                    <p class="text-muted">Saisie intuitive avec conversion automatique œufs → plateaux en temps réel.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card h-100 p-4">
+                <div class="card-body">
+                    <h2 class="fs-1 mb-3">💰</h2>
+                    <h5 class="fw-bold">Suivi des Ventes</h5>
+                    <p class="text-muted">Calculez instantanément vos revenus par plateau ou en unités. Historique complet.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card feature-card h-100 p-4">
+                <div class="card-body">
+                    <h2 class="fs-1 mb-3">📊</h2>
+                    <h5 class="fw-bold">Analyses & Dashboard</h5>
+                    <p class="text-muted">Graphiques de production, KPI mensuels et historique accessible en un clic.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "gestion/base.html" %}
+{% block title %}Bilan Financier{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <h3 class="fw-bold mb-0">📊 Bilan Financier</h3>
+        <form method="get" class="d-flex gap-2">
+            <input type="date" name="debut" value="{{ debut }}" class="form-control" required>
+            <input type="date" name="fin" value="{{ fin }}" class="form-control" required>
+            <button type="submit" class="btn btn-primary">🔍 Filtrer</button>
+            <a href="{% url 'bilan' %}" class="btn btn-outline-secondary">↺ Ce mois</a>
+        </form>
+    </div>
+
+    {% if alert_benefice %}
+    <div class="alert alert-danger shadow-sm mb-4">⚠️ Période déficitaire : les dépenses dépassent les revenus.</div>
+    {% endif %}
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card bg-success text-white text-center p-4 shadow-sm h-100">
+                <h2 class="mb-0 fw-bold">{{ revenus|floatformat:0 }}</h2>
+                <small class="opacity-75">💰 Revenus (Ventes)</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger text-white text-center p-4 shadow-sm h-100">
+                <h2 class="mb-0 fw-bold">{{ depenses|floatformat:0 }}</h2>
+                <small class="opacity-75">🔧 Dépenses</small>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card {% if resultat < 0 %}bg-warning{% else %}bg-primary{% endif %} text-white text-center p-4 shadow-sm h-100">
+                <h2 class="mb-0 fw-bold">{{ resultat|floatformat:0 }}</h2>
+                <small class="opacity-75">📈 Résultat Net</small>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white fw-bold">📅 Période sélectionnée : {{ debut|date:"d/m/Y" }} → {{ fin|date:"d/m/Y" }}</div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex justify-content-between"><span>Total Ventes enregistrées</span><span class="fw-bold">{{ revenus|floatformat:0 }} FCFA</span></li>
+            <li class="list-group-item d-flex justify-content-between"><span>Total Dépenses enregistrées</span><span class="fw-bold">{{ depenses|floatformat:0 }} FCFA</span></li>
+            <li class="list-group-item d-flex justify-content-between bg-light"><span class="fw-bold">💵 Bénéfice / Perte</span><span class="fw-bold {% if resultat < 0 %}text-danger{% else %}text-success{% endif %}">{{ resultat|floatformat:0 }} FCFA</span></li>
+        </ul>
+    </div>
+    
+    <div class="mt-4 d-flex gap-2">
+        <a href="{% url 'export_bilan' %}?debut={{ debut }}&fin={{ fin }}" class="btn btn-outline-success">📤 Exporter Bilan (.xlsx)</a>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">← Retour Dashboard</a>
+    </div>
+</div>
+{% endblock %}

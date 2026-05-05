@@ -1,0 +1,24 @@
+{% extends "gestion/base.html" %}
+{% block title %}Sortie Poules{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header bg-secondary text-white">🐔 Sortie de Poules (Mortalité / Vente)</div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="mb-3"><label class="fw-bold">📅 Date</label>{{ form.date }}</div>
+                <div class="mb-3"><label class="fw-bold">🏠 Poulailler</label>{{ form.poulailler }}</div>
+                <div class="mb-3"><label class="fw-bold">🔢 Nombre</label>{{ form.nombre }}</div>
+                <div class="mb-3"><label class="fw-bold">📋 Type</label>{{ form.type_sortie }}</div>
+                <div class="mb-3"><label class="fw-bold">💰 Montant (si vente)</label>{{ form.prix_total }}</div>
+                <button type="submit" class="btn btn-secondary w-100 py-3">✅ Enregistrer</button>
+            </form>
+        </div>
+    </div>
+    <div class="mt-3 text-center">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">← Retour au Dashboard</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,170 @@
+from .models import MouvementStock
+from .models import CategorieStock
+from .models import ProductionOeufs
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Sum, Count
+from .models import Poulailler, ProductionOeufs, MouvementCheptel, Vente, CategorieStock, MouvementStock
+
+@login_required
+def dashboard(request):
+    # 📦 Initialisation sécurisée des variables stock
+    stock_u, stock_pl = 0, 0
+    
+    # 📦 Calcul dynamique : Production - Sorties (pas d'entrées manuelles)
+    try:
+        total_prod = ProductionOeufs.objects.aggregate(Sum('nombre_oeufs'))['nombre_oeufs__sum'] or 0
+        cat_oeuf = CategorieStock.objects.filter(nom__icontains='œuf').first()
+        sorties = 0
+        if cat_oeuf:
+            sorties = MouvementStock.objects.filter(
+                categorie=cat_oeuf,
+                type_mouvement__in=['sortie', 'perte']
+            ).aggregate(Sum('quantite'))['quantite__sum'] or 0
+        stock_u = max(0, int(total_prod - sorties))
+        stock_pl = stock_u // 30
+        print(f'📦 STOCK_DEBUG: {stock_u}u / {stock_pl}plt')
+    except Exception as e:
+        print(f'⚠️ Stock calc error: {e}')
+        # stock_u et stock_pl restent à 0 (déjà initialisés)
+    
+    today = timezone.now().date()
+    
+    # 🐔 Calcul cheptel dynamique
+    cheptel_dynamique, total_poules_actives = [], 0
+    for bat in Poulailler.objects.all():
+        ent = MouvementCheptel.objects.filter(poulailler=bat, date__lte=today, type_mouvement__in=['achat','transfert_in']).aggregate(Sum('nombre_poules'))['nombre_poules__sum'] or 0
+        sor = MouvementCheptel.objects.filter(poulailler=bat, date__lte=today, type_mouvement__in=['transfert_out','reforme','mortalite']).aggregate(Sum('nombre_poules'))['nombre_poules__sum'] or 0
+        eff = ent - sor
+        total_poules_actives += eff
+        eggs = ProductionOeufs.objects.filter(poulailler=bat, date__gte=today-timedelta(days=30)).aggregate(Sum('nombre_oeufs'))['nombre_oeufs__sum'] or 0
+        taux = round((eggs/(eff*30)*100),1) if eff>0 else 0
+        cheptel_dynamique.append({'nom':bat.nom, 'effectif':eff, 'taux_ponte':taux, 'eggs_30':eggs})
+    
+    total_eggs = sum(b['eggs_30'] for b in cheptel_dynamique)
+    total_eff = sum(b['effectif'] for b in cheptel_dynamique)
+    taux_ponte = round((total_eggs / (total_eff * 30) * 100), 1) if total_eff > 0 else 0
+    poules_actives = total_poules_actives
+    
+    # 📊 Données graphiques
+    chart_labels, chart_data = [], []
+    for i in range(6,-1,-1):
+        d = today - timedelta(days=i)
+        total = ProductionOeufs.objects.filter(date=d).aggregate(Sum('nombre_oeufs'))['nombre_oeufs__sum'] or 0
+        chart_labels.append(d.strftime("%d/%m"))
+        chart_data.append(total // 30 if total else 0)
+    
+    # 📦 Stock réel (calculé depuis MouvementStock)
+    stock_u, 0
+    try:
+        cat = CategorieStock.objects.filter(nom__icontains='œuf').first() or CategorieStock.objects.first()
+        if cat:
+            e = MouvementStock.objects.filter(categorie=cat, type_mouvement='entree').aggregate(Sum('quantite'))['quantite__sum'] or 0
+            s = MouvementStock.objects.filter(categorie=cat, type_mouvement__in=['sortie','perte']).aggregate(Sum('quantite'))['quantite__sum'] or 0
+            stock_u = e - s
+            stock_pl = stock_u // 30
+    except: pass
+    
+    # 💰 Ventes
+    ventes_mois = Vente.objects.filter(date__month=today.month, date__year=today.year).aggregate(Sum('montant_total'))['montant_total__sum'] or 0
+    
+    # 👥 Groupes utilisateur
+    user_groups = [g.name for g in request.user.groups.all()]
+    
+
+    # 📦 STOCK OEUFS (Production - Sorties/Pertes)
+    # ⚠️ Les 'entrées' manuelles sont volontairement ignorées pour éviter le doublon
+    stock_u, stock_pl = 0, 0
+    try:
+        # A. Total œufs collectés (source unique d'entrée)
+        total_prod = ProductionOeufs.objects.aggregate(Sum('nombre_oeufs'))['nombre_oeufs__sum'] or 0
+        
+        # B. Total œufs sortis ou perdus (saisis manuellement dans Stock)
+        cat_oeuf = CategorieStock.objects.filter(nom__icontains='œuf').first()
+        sorties = 0
+        if cat_oeuf:
+            sorties = MouvementStock.objects.filter(
+                categorie=cat_oeuf,
+                type_mouvement__in=['sortie', 'perte']
+            ).aggregate(Sum('quantite'))['quantite__sum'] or 0
+            
+        stock_u = max(0, int(total_prod - sorties))
+        stock_pl = stock_u // 30
+        print(f'📦 DEBUG_STOCK: Prod={total_prod} | Sorties={sorties} | Stock={stock_u} ({stock_pl} plt)')
+    except Exception as e:
+        print(f'❌ ERREUR CALCUL STOCK: {e}')
+        stock_u, stock_pl = 0, 0
+
+    context = {
+        'cheptel_data': cheptel_dynamique,
+        'poules_actives': poules_actives,
+        'taux_ponte': taux_ponte,
+        'stock_plateaux': stock_pl,
+        'stock_unites': stock_u,
+        'ventes_mois': ventes_mois,
+        'chart_labels': chart_labels,
+        'chart_data': chart_data,
+        'user_groups': user_groups,
+        'today': today,
+    }
+    return render(request, 'gestion/dashboard.html', context)
+
+# 💰 Choix du type de vente
+@login_required
+def vente_choice(request):
+    """Page de sélection du type de vente avant d'afficher le formulaire adapté."""
+    return render(request, 'gestion/vente_choice.html', {
+        'title': '💰 Nouveau : Type de vente',
+        'types': [
+            {'key': 'oeufs', 'label': '🥚 Vente d'œufs', 'desc': 'Plateaux, unités, casiers', 'url': '/vente/oeufs/add/'},
+            {'key': 'poulets', 'label': '🐔 Vente de poulets/poules', 'desc': 'Vifs, abattus, par lot', 'url': '/vente/poulets/add/'},
+            {'key': 'autres', 'label': '📦 Autres produits', 'desc': 'Fumier, sacs, matériel...', 'url': '/vente/autres/add/'},
+        ]
+    })
+
+# 🥚 Formulaire vente œufs
+@login_required
+def vente_oeufs_add(request):
+    """Formulaire spécialisé pour la vente d'œufs."""
+    if request.method == 'POST':
+        # Traitement simplifié — à adapter selon ton modèle Vente
+        from .models import Vente
+        from django.contrib import messages
+        try:
+            v = Vente.objects.create(
+                date=request.POST.get('date'),
+                client=request.POST.get('client', 'Client inconnu'),
+                type_vente='oeufs',
+                quantite=request.POST.get('quantite'),
+                prix_unitaire=request.POST.get('prix_unitaire'),
+                montant_total=float(request.POST.get('quantite', 0) or 0) * float(request.POST.get('prix_unitaire', 0) or 0),
+                cree_par=request.user
+            )
+            messages.success(request, f"✅ Vente d'œufs enregistrée : {v.quantite} x {v.prix_unitaire} F")
+            return redirect('dashboard')
+        except Exception as e:
+            messages.error(request, f"❌ Erreur : {e}")
+    return render(request, 'gestion/vente_oeufs_form.html', {'title': '🥚 Vente d'œufs'})
+
+# 🐔 Formulaire vente poulets (placeholder)
+@login_required
+def vente_poulets_add(request):
+    return render(request, 'gestion/vente_form.html', {'title': '🐔 Vente de poulets', 'type': 'poulets'})
+
+# 📦 Formulaire vente autres (utilise le modèle Vente standard)
+@login_required
+def vente_autres_add(request):
+    from .forms import VenteForm  # À créer si besoin
+    if request.method == 'POST':
+        form = VenteForm(request.POST)
+        if form.is_valid():
+            v = form.save(commit=False)
+            v.type_vente = 'autres'
+            v.cree_par = request.user
+            v.save()
+            return redirect('dashboard')
+    else:
+        form = VenteForm()
+    return render(request, 'gestion/vente_form.html', {'form': form, 'title': '📦 Autre vente', 'type': 'autres'})

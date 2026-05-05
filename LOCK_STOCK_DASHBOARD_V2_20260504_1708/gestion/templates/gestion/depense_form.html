@@ -1,0 +1,23 @@
+{% extends "gestion/base.html" %}
+{% block title %}Nouvelle Dépense{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-secondary text-white">🔧 Nouvelle Dépense</div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="mb-3"><label class="fw-bold">📅 Date</label>{{ form.date }}</div>
+                <div class="mb-3"><label class="fw-bold">🏷️ Catégorie</label>{{ form.categorie }}</div>
+                <div class="mb-3"><label class="fw-bold">💰 Montant (FCFA)</label>{{ form.montant }}</div>
+                <div class="mb-3"><label class="fw-bold">📝 Notes</label>{{ form.description }}</div>
+                <button type="submit" class="btn btn-secondary w-100 py-3">✅ Enregistrer la Dépense</button>
+            </form>
+        </div>
+    </div>
+    <div class="mt-3 text-center">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">← Retour au Dashboard</a>
+    </div>
+</div>
+{% endblock %}

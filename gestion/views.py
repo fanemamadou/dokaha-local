@@ -1,0 +1,164 @@
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from django.db.models import Sum, Q, F
+from django.contrib.auth.models import User
+from django.contrib import messages
+from decimal import Decimal
+from gestion.models import ProductionOeufs, Vente, Depense, Poulailler, CategorieStock, MouvementStock, Produit
+from .forms import StockEntreeForm, StockSortieForm
+
+# =============================================================================
+# 📦 VUES STOCK (placeholders garantis fonctionnels)
+# =============================================================================
+@login_required
+def stock_historique(request):
+    """Historique des mouvements Stock"""
+    return render(request, 'gestion/base.html', {'title': '📜 Historique Stock', 'user': request.user})
+
+# =============================================================================
+# 🎯 AUTRES VUES (placeholders si absentes)
+# =============================================================================
+@login_required
+def dashboard(request):
+    return render(request, 'gestion/base.html', {'title': 'Dashboard', 'user': request.user})
+
+@login_required
+def dg_dashboard(request):
+    return render(request, 'gestion/base.html', {'title': 'Dashboard DG', 'user': request.user})
+
+@login_required
+def vente_list(request):
+    ventes = Vente.objects.all().order_by('-date')[:100]
+    return render(request, 'gestion/vente_list.html', {'ventes': ventes, 'title': 'Ventes', 'user': request.user})
+
+@login_required
+def vente_choice(request):
+    return render(request, 'gestion/vente_choice.html', {'title': 'Type de vente', 'user': request.user})
+
+@login_required
+def vente_form(request, type_vente):
+    return render(request, 'gestion/vente_form.html', {'type_vente': type_vente, 'title': f'Vente {type_vente}', 'user': request.user})
+
+@login_required
+def acces_refuse(request):
+    return render(request, 'gestion/acces_refuse.html', {'title': '🚫 Accès Refusé', 'user': request.user})
+
+# 📦 VUES STOCK - Ajoutées proprement (ne pas toucher)
+@login_required
+def stock_historique(request):
+    return render(request, 'gestion/base.html', {'title': '📜 Historique Stock', 'user': request.user})
+@login_required
+@login_required
+def stock_ajouter(request):
+    """Formulaire mouvement stock (compatible catégorie + choices réels)"""
+    from .forms import StockMouvementForm
+    from .models import MouvementStock, CategorieStock
+    from django.utils import timezone
+    from django.contrib import messages
+    from decimal import Decimal
+    
+    if request.method == 'POST':
+        form = StockMouvementForm(request.POST)
+        if form.is_valid():
+            cat = form.cleaned_data['categorie']  # Le form renvoie maintenant une CategorieStock
+            type_mvt = form.cleaned_data['type_mouvement']  # 'entree', 'sortie', etc.
+            quantite = Decimal(str(form.cleaned_data['quantite']))
+            commentaire = form.cleaned_data.get('commentaire', '')
+            
+            MouvementStock.objects.create(
+                categorie=cat,
+                date=timezone.now(),
+                type_mouvement=type_mvt,
+                quantite=quantite,
+                prix_unitaire=Decimal('0'),
+                montant_total=Decimal('0'),
+                commentaire=commentaire,
+                cree_par=request.user
+            )
+            messages.success(request, f"✅ {quantite} {cat.unite_mesure if cat.unite_mesure else 'unité(s)'} {type_mvt} enregistrée(s)")
+            return redirect('/stock/')
+    else:
+        form = StockMouvementForm()
+        
+    return render(request, 'gestion/stock_ajouter.html', {
+        'title': '📝 Ajouter un Mouvement Stock',
+        'form': form,
+        'user': request.user
+    })
+@login_required
+def stock_dashboard(request):
+    """Dashboard Stock V2 : indicateurs visuels + ratios"""
+    from django.db.models import Sum
+    from gestion.models import CategorieStock, MouvementStock
+
+    categories = CategorieStock.objects.all().order_by('nom')
+    data = []
+    total_alertes = 0
+    
+    for cat in categories:
+        entrees = MouvementStock.objects.filter(categorie=cat, type_mouvement='entree').aggregate(Sum('quantite'))['quantite__sum'] or 0
+        sorties = MouvementStock.objects.filter(categorie=cat, type_mouvement='sortie').aggregate(Sum('quantite'))['quantite__sum'] or 0
+        ajust   = MouvementStock.objects.filter(categorie=cat, type_mouvement='ajustement').aggregate(Sum('quantite'))['quantite__sum'] or 0
+        pertes  = MouvementStock.objects.filter(categorie=cat, type_mouvement='perte').aggregate(Sum('quantite'))['quantite__sum'] or 0
+        
+        stock = float(entrees - sorties + ajust - pertes)
+        seuil = cat.seuil_alerte or 0
+        is_critical = seuil > 0 and stock <= seuil
+        if is_critical: total_alertes += 1
+        
+        # Ratio pour barre de progression (max 100%)
+        ratio = min(100, round((stock / seuil * 100) if seuil > 0 else 0, 1))
+        
+        data.append({
+            'cat': cat, 'stock': stock, 'seuil': seuil,
+            'is_critical': is_critical, 'ratio': ratio
+        })
+        
+    return render(request, 'gestion/stock_dashboard.html', {
+        'title': '📦 État des Stocks',
+        'categories': data,
+        'total_categories': len(data),
+        'total_alertes': total_alertes,
+        'user': request.user
+    })
+
+# 🥚 VUE COLLECTE ŒUFS (DUAL MODE + SYNC STOCK)
+@login_required
+def collecte_oeufs(request):
+    """Formulaire collecte œufs : mode Plateaux ou Vrac + mouvement stock auto"""
+    from .forms import ProductionOeufsForm
+    from .models import MouvementStock, CategorieStock
+    from django.contrib import messages
+    from decimal import Decimal
+    
+    cat_oeufs = CategorieStock.objects.filter(nom__icontains='oeuf').first()
+    
+    if request.method == 'POST':
+        form = ProductionOeufsForm(request.POST)
+        if form.is_valid():
+            collecte = form.save(user=request.user)
+            
+            # Créer mouvement stock si catégorie Œufs existe
+            if cat_oeufs and collecte.nombre_oeufs > 0:
+                MouvementStock.objects.create(
+                    categorie=cat_oeufs,
+                    date=collecte.date,
+                    type_mouvement='entree',
+                    quantite=Decimal(str(collecte.nombre_oeufs)),
+                    commentaire=f'Collecte: {collecte.plateaux} plateaux + {collecte.reste_oeufs} œufs',
+                    cree_par=request.user
+                )
+                msg = f"✅ {collecte.plateaux} plateaux + {collecte.reste_oeufs} œufs = {collecte.nombre_oeufs} œufs enregistrés + stock mis à jour"
+            else:
+                msg = f"✅ {collecte.nombre_oeufs} œufs enregistrés"
+            
+            messages.success(request, msg)
+            return redirect('/collecte/')
+    else:
+        form = ProductionOeufsForm()
+    
+    return render(request, 'gestion/collecte_oeufs.html', {
+        'form': form, 'title': '🥚 Collecte Œufs', 'user': request.user
+    })
+

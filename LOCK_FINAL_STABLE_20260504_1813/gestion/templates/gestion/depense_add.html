@@ -1,0 +1,41 @@
+{% extends 'gestion/base.html' %}
+{% block title %}🔧 Nouvelle dépense{% endblock %}
+{% block content %}
+<div class="container" style="max-width:600px; margin:2rem auto; padding:1rem;">
+  <div class="card">
+    <h2>🔧 Saisir une dépense</h2>
+    <form method="post" action="">
+      {% csrf_token %}
+      
+      <div class="form-group">
+        <label>📅 Date</label>
+        <input type="date" name="date" class="form-control" required>
+      </div>
+      
+      <div class="form-group">
+        <label>🏷️ Catégorie</label>
+        <select name="categorie" class="form-control">
+          <option value="Aliment">Aliment</option>
+          <option value="Médicament">Médicament</option>
+          <option value="Entretien">Entretien</option>
+          <option value="Transport">Transport</option>
+          <option value="Autre">Autre</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label>💰 Montant (FCFA)</label>
+        <input type="number" name="montant" class="form-control" min="0" inputmode="numeric" required>
+      </div>
+      
+      <div class="form-group">
+        <label>📝 Description (optionnel)</label>
+        <input type="text" name="description" class="form-control" placeholder="Détails...">
+      </div>
+      
+      <button type="submit" class="btn btn-warning btn-block" style="background:#f57c00;">💸 Enregistrer la dépense</button>
+      <a href="{% url 'dashboard' %}" class="btn btn-secondary btn-block">↩ Annuler</a>
+    </form>
+  </div>
+</div>
+{% endblock %}

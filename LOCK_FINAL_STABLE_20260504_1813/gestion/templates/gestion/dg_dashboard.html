@@ -1,0 +1,165 @@
+{% extends 'gestion/base.html' %}
+{% load humanize %}
+{% block title %}{{ title }}
+    <!-- 💳 Bloc Crédits en cours (Relances) -->
+    <div class="card shadow-sm border-warning mb-4">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">💳 Crédits en cours <small class="text-muted">({{ credits_en_cours|length }})</small></h5>
+            <span class="badge bg-danger fs-6">{{ total_credits|default:0|default:0 }} FCFA</span>
+        </div>
+        <div class="card-body p-0">
+            {% if credits_en_cours %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light small">
+                        <tr>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Type</th>
+                            <th class="text-end">Reste</th>
+                            <th>Statut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        {% for c in credits_en_cours %}
+                        <tr class="{% if c.date < today|date:'Y-m-d'|add:'-7 days' %}table-danger{% endif %}">
+                            <td>{{ c.date|date:"d/m/y" }}</td>
+                            <td class="fw-bold">{{ c.client|default:"Comptoir" }}</td>
+                            <td><span class="badge bg-{% if c.type_vente == 'oeufs' %}warning{% elif c.type_vente == 'poulets' %}danger{% else %}info{% endif %}">{{ c.get_type_vente_display }}</span></td>
+                            <td class="text-end text-danger fw-bold">{{ c.montant_restant|default:0 }} F</td>
+                            <td>
+                                {% if c.date < today|date:'Y-m-d'|add:'-7 days' %}
+                                <span class="badge bg-danger">⚠️ Retard</span>
+                                {% else %}
+                                <span class="badge bg-success">✓ À jour</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if c.client_tel %}
+                                <a href="tel:+225{{ c.client_tel }}" class="btn btn-sm btn-outline-primary" title="Appeler">📞</a>
+                                {% else %}
+                                <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4 mb-0"><i class="fas fa-check-circle text-success me-2"></i>✅ Aucun crédit en cours - Trésorerie saine</p>
+            {% endif %}
+        </div>
+        {% if credits_anciens %}
+        <div class="card-footer bg-warning text-dark small">
+            ⚠️ <strong>{{ credits_anciens|length }} crédit(s) ancien(s)</strong> > 7 jours → Relance prioritaire recommandée
+        </div>
+        {% endif %}
+    </div>
+
+{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h3 class="mb-4">{{ title }}</h3>
+
+    <!-- Alertes -->
+    {% if alertes %}
+    <div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i> {{ alertes|join:" | " }}</div>
+    {% else %}
+    <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i> Aucune alerte critique - Tous les indicateurs sont dans le vert.</div>
+    {% endif %}
+
+    <!-- 💰 Indicateurs Financiers -->
+    <h5 class="text-muted mb-3">💰 Indicateurs Financiers (Ce mois)</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card p-3 border-primary"><h6>CA Mois</h6><h3 class="text-primary">{{ ca_mois|default:0 }} FCFA</h3></div></div>
+        <div class="col-md-3"><div class="card p-3 border-danger"><h6>Dépenses</h6><h3 class="text-danger">{{ depenses_mois|default:0 }} FCFA</h3></div></div>
+        <div class="col-md-3"><div class="card p-3 border-success"><h6>Marge Brute</h6><h3 class="text-success">{{ marge_brute|default:0 }} FCFA</h3></div></div>
+        <div class="col-md-3"><div class="card p-3 border-info"><h6>Coût / Œuf</h6><h3 class="text-info">{{ cout_par_oeuf|default:0 }} FCFA</h3></div></div>
+    </div>
+
+    <!-- 📈 Performance Production -->
+    <h5 class="text-muted mb-3">📈 Performance Production (30j)</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card p-3"><h6>Œufs produits</h6><h3>{{ oeufs_30j|default:0 }}</h3></div></div>
+        <div class="col-md-3"><div class="card p-3"><h6>Taux ponte moyen</h6><h3 class="{% if taux_ponte_moyen >= 30 %}text-success{% elif taux_ponte_moyen >= 20 %}text-warning{% else %}text-danger{% endif %}">{{ taux_ponte_moyen|default:0 }}%</h3></div></div>
+        <div class="col-md-3"><div class="card p-3"><h6>Mortalité</h6><h3 class="{% if mortalite <= 2 %}text-success{% else %}text-danger{% endif %}">{{ mortalite|default:0 }}</h3></div></div>
+        <div class="col-md-3"><div class="card p-3"><h6>Poules actives</h6><h3>{{ poules_actives|default:0 }}</h3></div></div>
+    </div>
+
+    <!-- 📦 Stock & Ressources -->
+    <h5 class="text-muted mb-3">📦 Stock & Ressources</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="card p-3"><h6>Valeur Stock Estimée</h6><h3 class="text-success">{{ valeur_stock|default:0 }} FCFA</h3></div></div>
+        <div class="col-md-4"><div class="card p-3"><h6>Stock Actuel</h6><h3>{{ stock_oeufs|default:0 }} œufs</h3></div></div>
+        <div class="col-md-4"><div class="card p-3"><h6>Bâtiments / Effectif</h6><h3>{{ batiments_actifs|default:0 }} / {{ effectif_total|default:0 }}</h3></div></div>
+    </div>
+
+    <!-- 📋 Synthèse Direction -->
+    <h5 class="text-muted mb-3">📋 Synthèse Direction</h5>
+    <div class="row g-3">
+        <div class="col-md-4"><div class="card p-3 text-center"><h6>Rentabilité</h6><h2 class="{% if score_rentabilite >= 70 %}text-success{% elif score_rentabilite >= 40 %}text-warning{% else %}text-danger{% endif %}">{{ score_rentabilite|default:0 }}%</h2></div></div>
+        <div class="col-md-4"><div class="card p-3 text-center"><h6>Efficacité production</h6><h2 class="{% if score_effica >= 70 %}text-success{% elif score_effica >= 40 %}text-warning{% else %}text-danger{% endif %}">{{ score_effica|default:0 }}%</h2></div></div>
+        <div class="col-md-4"><div class="card p-3 text-center"><h6>Maîtrise sanitaire</h6><h2 class="{% if score_sanitaire >= 90 %}text-success{% else %}text-danger{% endif %}">{{ score_sanitaire|default:0 }}%</h2></div></div>
+    </div>
+</div>
+
+    <!-- 💳 Bloc Crédits en cours (Relances) -->
+    <div class="card shadow-sm border-warning mb-4">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">💳 Crédits en cours <small class="text-muted">({{ credits_en_cours|length }})</small></h5>
+            <span class="badge bg-danger fs-6">{{ total_credits|default:0|default:0 }} FCFA</span>
+        </div>
+        <div class="card-body p-0">
+            {% if credits_en_cours %}
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light small">
+                        <tr>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Type</th>
+                            <th class="text-end">Reste</th>
+                            <th>Statut</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="small">
+                        {% for c in credits_en_cours %}
+                        <tr class="{% if c.date < today|date:'Y-m-d'|add:'-7 days' %}table-danger{% endif %}">
+                            <td>{{ c.date|date:"d/m/y" }}</td>
+                            <td class="fw-bold">{{ c.client|default:"Comptoir" }}</td>
+                            <td><span class="badge bg-{% if c.type_vente == 'oeufs' %}warning{% elif c.type_vente == 'poulets' %}danger{% else %}info{% endif %}">{{ c.get_type_vente_display }}</span></td>
+                            <td class="text-end text-danger fw-bold">{{ c.montant_restant|default:0 }} F</td>
+                            <td>
+                                {% if c.date < today|date:'Y-m-d'|add:'-7 days' %}
+                                <span class="badge bg-danger">⚠️ Retard</span>
+                                {% else %}
+                                <span class="badge bg-success">✓ À jour</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if c.client_tel %}
+                                <a href="tel:+225{{ c.client_tel }}" class="btn btn-sm btn-outline-primary" title="Appeler">📞</a>
+                                {% else %}
+                                <span class="text-muted small">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted text-center py-4 mb-0"><i class="fas fa-check-circle text-success me-2"></i>✅ Aucun crédit en cours - Trésorerie saine</p>
+            {% endif %}
+        </div>
+        {% if credits_anciens %}
+        <div class="card-footer bg-warning text-dark small">
+            ⚠️ <strong>{{ credits_anciens|length }} crédit(s) ancien(s)</strong> > 7 jours → Relance prioritaire recommandée
+        </div>
+        {% endif %}
+    </div>
+
+{% endblock %}

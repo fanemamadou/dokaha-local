@@ -1,0 +1,75 @@
+{% extends "gestion/base.html" %}
+{% block title %}Vente Autres{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h3 class="fw-bold mb-4">📦 Vente Autres</h3>
+    <form method="post" class="card p-4 shadow-sm" id="form-autres">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-6">{{ form.date.label_tag }} {{ form.date }}</div>
+            <div class="col-md-6">{{ form.client.label_tag }} {{ form.client }}</div>
+            
+            <div class="col-12">
+                <label>📝 Description / Désignation</label>
+                <input type="text" name="client" id="id_client_desc" class="form-control" placeholder="Ex: Matériel, Aliments, Accessoires..." value="{{ form.client.value|default:'' }}">
+                <small class="text-muted">Utilise le champ "Client" pour la description de l'article vendu</small>
+            </div>
+            
+            <div class="col-md-6">
+                <label>💰 Montant total (FCFA)</label>
+                <input type="number" name="montant_total" id="id_montant_total" class="form-control" value="{{ form.montant_total.value|default:0 }}" min="0" step="1" oninput="checkPaye()">
+            </div>
+            <div class="col-md-6">
+                <label>💳 Montant payé (FCFA)</label>
+                <input type="number" name="montant_paye" id="id_montant_paye" class="form-control" value="{{ form.montant_paye.value|default:0 }}" min="0" oninput="checkPaye()">
+                <small class="text-muted" id="reste-msg"></small>
+            </div>
+            
+            <div class="col-md-6">
+                <label>📝 Mode de paiement</label>
+                <select name="mode_paiement" id="id_mode_paiement" class="form-select">
+                    <option value="comptant" {% if form.mode_paiement.value == "comptant" %}selected{% endif %}>💵 Comptant</option>
+                    <option value="credit" {% if form.mode_paiement.value == "credit" %}selected{% endif %}>📝 Crédit</option>
+                    <option value="mobile" {% if form.mode_paiement.value == "mobile" %}selected{% endif %}>📱 Mobile Money</option>
+                    <option value="cheque" {% if form.mode_paiement.value == "cheque" %}selected{% endif %}>🧾 Chèque</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-success fw-bold px-4">💾 Enregistrer</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function checkPaye() {
+    var total = parseFloat(document.getElementById('id_montant_total').value) || 0;
+    var paye = parseFloat(document.getElementById('id_montant_paye').value) || 0;
+    var reste = total - paye;
+    var msg = document.getElementById('reste-msg');
+    
+    if (paye > total) {
+        msg.textContent = "⚠️ Le montant payé ne peut pas dépasser le total !";
+        msg.className = "text-danger";
+        document.getElementById('id_montant_paye').value = total;
+    } else if (paye < total && paye > 0) {
+        msg.textContent = "💳 Reste à payer : " + Math.round(reste) + " FCFA";
+        msg.className = "text-warning";
+    } else if (paye >= total && total > 0) {
+        msg.textContent = "✅ Payé en totalité";
+        msg.className = "text-success";
+    } else {
+        msg.textContent = "";
+    }
+}
+// Auto-fill montant_paye au chargement si vide
+document.addEventListener('DOMContentLoaded', function() {
+    var total = document.getElementById('id_montant_total').value;
+    var paye = document.getElementById('id_montant_paye');
+    if (!paye.value || paye.value == 0) paye.value = total;
+    checkPaye();
+});
+</script>
+{% endblock %}

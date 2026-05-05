@@ -1,0 +1,48 @@
+{% extends 'gestion/base.html' %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+    <h3 class="mb-4">{{ title }}</h3>
+
+    <!-- Alertes -->
+    {% if alertes %}
+    <div class="alert alert-warning"><i class="fas fa-exclamation-triangle me-2"></i> {{ alertes|join:" | " }}</div>
+    {% else %}
+    <div class="alert alert-success"><i class="fas fa-check-circle me-2"></i> Aucune alerte critique - Tous les indicateurs sont dans le vert.</div>
+    {% endif %}
+
+    <!-- 💰 Indicateurs Financiers -->
+    <h5 class="text-muted mb-3">💰 Indicateurs Financiers (Ce mois)</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card p-3 border-primary"><h6>CA Mois</h6><h3 class="text-primary">{{ ca_mois|default:0 }} FCFA</h3></div></div>
+        <div class="col-md-3"><div class="card p-3 border-danger"><h6>Dépenses</h6><h3 class="text-danger">{{ depenses_mois|default:0 }} FCFA</h3></div></div>
+        <div class="col-md-3"><div class="card p-3 border-success"><h6>Marge Brute</h6><h3 class="text-success">{{ marge_brute|default:0 }} FCFA</h3></div></div>
+        <div class="col-md-3"><div class="card p-3 border-info"><h6>Coût / Œuf</h6><h3 class="text-info">{{ cout_par_oeuf|default:0 }} FCFA</h3></div></div>
+    </div>
+
+    <!-- 📈 Performance Production -->
+    <h5 class="text-muted mb-3">📈 Performance Production (30j)</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-md-3"><div class="card p-3"><h6>Œufs produits</h6><h3>{{ oeufs_30j|default:0 }}</h3></div></div>
+        <div class="col-md-3"><div class="card p-3"><h6>Taux ponte moyen</h6><h3 class="{% if taux_ponte_moyen >= 30 %}text-success{% elif taux_ponte_moyen >= 20 %}text-warning{% else %}text-danger{% endif %}">{{ taux_ponte_moyen|default:0 }}%</h3></div></div>
+        <div class="col-md-3"><div class="card p-3"><h6>Mortalité</h6><h3 class="{% if mortalite <= 2 %}text-success{% else %}text-danger{% endif %}">{{ mortalite|default:0 }}</h3></div></div>
+        <div class="col-md-3"><div class="card p-3"><h6>Poules actives</h6><h3>{{ poules_actives|default:0 }}</h3></div></div>
+    </div>
+
+    <!-- 📦 Stock & Ressources -->
+    <h5 class="text-muted mb-3">📦 Stock & Ressources</h5>
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="card p-3"><h6>Valeur Stock Estimée</h6><h3 class="text-success">{{ valeur_stock|default:0 }} FCFA</h3></div></div>
+        <div class="col-md-4"><div class="card p-3"><h6>Stock Actuel</h6><h3>{{ stock_oeufs|default:0 }} œufs</h3></div></div>
+        <div class="col-md-4"><div class="card p-3"><h6>Bâtiments / Effectif</h6><h3>{{ batiments_actifs|default:0 }} / {{ effectif_total|default:0 }}</h3></div></div>
+    </div>
+
+    <!-- 📋 Synthèse Direction -->
+    <h5 class="text-muted mb-3">📋 Synthèse Direction</h5>
+    <div class="row g-3">
+        <div class="col-md-4"><div class="card p-3 text-center"><h6>Rentabilité</h6><h2 class="{% if score_rentabilite >= 70 %}text-success{% elif score_rentabilite >= 40 %}text-warning{% else %}text-danger{% endif %}">{{ score_rentabilite|default:0 }}%</h2></div></div>
+        <div class="col-md-4"><div class="card p-3 text-center"><h6>Efficacité production</h6><h2 class="{% if score_effica >= 70 %}text-success{% elif score_effica >= 40 %}text-warning{% else %}text-danger{% endif %}">{{ score_effica|default:0 }}%</h2></div></div>
+        <div class="col-md-4"><div class="card p-3 text-center"><h6>Maîtrise sanitaire</h6><h2 class="{% if score_sanitaire >= 90 %}text-success{% else %}text-danger{% endif %}">{{ score_sanitaire|default:0 }}%</h2></div></div>
+    </div>
+</div>
+{% endblock %}

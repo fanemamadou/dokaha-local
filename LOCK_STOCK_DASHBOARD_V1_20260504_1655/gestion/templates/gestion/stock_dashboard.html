@@ -1,0 +1,28 @@
+{% extends 'gestion/base.html' %}
+{% load humanize %}
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4">📦 État des Stocks (par Catégorie)</h2>
+    <div class="row g-3">
+    {% for item in categories %}
+        <div class="col-md-4">
+            <div class="card shadow-sm {% if item.stock <= item.seuil and item.seuil > 0 %}border-danger{% else %}border-success{% endif %}">
+                <div class="card-body">
+                    <h5 class="card-title">{{ item.cat.nom }}</h5>
+                    <p class="text-muted small">{{ item.cat.description|default:"" }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fs-4 fw-bold {% if item.stock <= item.seuil and item.seuil > 0 %}text-danger{% else %}text-success{% endif %}">
+                            {{ item.stock|intcomma }}
+                        </span>
+                        <span class="badge bg-light text-dark border">Seuil: {{ item.seuil|intcomma }}</span>
+                    </div>
+                    <p class="small mb-0">{{ item.cat.unite_mesure|default:"unités" }}</p>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="col-12 text-center py-5 text-muted">Aucune catégorie configurée.</div>
+    {% endfor %}
+    </div>
+</div>
+{% endblock %}

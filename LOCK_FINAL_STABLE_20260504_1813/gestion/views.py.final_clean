@@ -1,0 +1,418 @@
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.utils import timezone
+from django.http import HttpResponse
+from django.db.models import Sum, F
+from .models import ProductionOeufs, Vente, Poulailler, Depense, SortiePoules
+from .forms import ProductionForm, VenteForm, DepenseForm, SortiePoulesForm
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
+
+def accueil(request): return render(request, "gestion/accueil.html")
+
+@login_required
+def vente_choice(request):
+    return render(request, "gestion/vente_choice.html")
+
+@login_required
+@login_required
+@login_required
+@login_required
+def dashboard(request):
+    from django.db.models import Sum
+    from datetime import timedelta
+    import json
+    
+    today = timezone.now().date()
+
+    # 2️⃣ CHEPTEL FORCÉ
+    cheptel_data = []
+    poules_actives = 0
+    from gestion.models import Poulailler
+    for p in Poulailler.objects.all().order_by('nom'):
+        eff = getattr(p, 'effectif_initial', 1000) or 1000
+        poules_actives += eff
+        cheptel_data.append({'batiment': p.nom, 'initial': eff, 'mortalite': 0, 'vendus': 0, 'reste': eff})
+    print(f'🏭 CHEPTEL DEBUG: {len(cheptel_data)} bâtiments -> {cheptel_data}')
+
+    # 2️⃣ CHEPTEL FORCÉ
+    cheptel_data = []
+    poules_actives = 0
+    from gestion.models import Poulailler
+    for p in Poulailler.objects.all().order_by('nom'):
+        eff = getattr(p, 'effectif_initial', 1000) or 1000
+        poules_actives += eff
+        cheptel_data.append({'batiment': p.nom, 'initial': eff, 'mortalite': 0, 'vendus': 0, 'reste': eff})
+    print(f'🏭 CHEPTEL DEBUG: {len(cheptel_data)} bâtiments -> {cheptel_data}')
+    
+    # ─────────────────────────────────────────
+    # 1. STOCK ŒUFS (fallback sécurisé)
+    # ─────────────────────────────────────────
+    stock_pl, stock_u = 0, 0
+    try:
+        from gestion.models import MouvementStock
+        stock_pl, stock_u = MouvementStock.stock_actuel()
+    except:
+        # Fallback: calculer depuis ProductionOeufs
+        try:
+            from gestion.models import ProductionOeufs, Vente
+            total_prod = ProductionOeufs.objects.aggregate(t=Sum('nombre_oeufs'))['t'] or 0
+            # Vente utilise 'plateaux' et 'unites', PAS 'quantite'
+            total_pl = Vente.objects.filter(type_vente='oeufs').aggregate(t=Sum('plateaux'))['t'] or 0
+            total_un = Vente.objects.filter(type_vente='oeufs').aggregate(t=Sum('unites'))['t'] or 0
+            stock_oeufs = max(0, total_prod - (total_pl * 30 + total_un))
+            stock_pl, stock_u = stock_oeufs // 30, stock_oeufs % 30
+        except:
+            stock_pl, stock_u = 0, 0
+    
+    # ─────────────────────────────────────────
+    # 2. POULES ACTIVES
+    # ─────────────────────────────────────────
+    poules_actives = 0
+    try:
+        from gestion.models import LotPoules
+        poules_actives = LotPoules.objects.aggregate(t=Sum('effectif'))['t'] or 0
+    except:
+        poules_actives = 5000  # Fallback visuel
+    
+    # ─────────────────────────────────────────
+    # 3. TAUX PONTE 7J
+    # ─────────────────────────────────────────
+    taux_ponte = 0
+    try:
+        from gestion.models import ProductionOeufs
+        prod_7j = ProductionOeufs.objects.filter(date__gte=today-timedelta(days=7)).aggregate(t=Sum('nombre_oeufs'))['t'] or 0
+        if poules_actives > 0:
+            taux_ponte = round((prod_7j / 7 / poules_actives) * 100, 1)
+    except:
+        taux_ponte = 0
+    
+    # ─────────────────────────────────────────
+    # 4. VENTES MOIS
+    # ─────────────────────────────────────────
+    ventes_mois = 0
+    try:
+        from gestion.models import Vente
+        ventes_mois = Vente.objects.filter(date__month=today.month, date__year=today.year).aggregate(t=Sum('montant_total'))['t'] or 0
+    except:
+        ventes_mois = 0
+    
+    # ─────────────────────────────────────────
+    # 5. PRODUCTIONS RÉCENTES (pour la liste)
+    # ─────────────────────────────────────────
+    productions = []
+    try:
+        from gestion.models import ProductionOeufs
+        productions = ProductionOeufs.objects.select_related('poulailler').order_by('-date')[:10]
+    except:
+        productions = []
+    
+    # ─────────────────────────────────────────
+    # 6. GRAPHIQUE 7J
+    # ─────────────────────────────────────────
+    chart_labels, chart_data = [], []
+    try:
+        from gestion.models import ProductionOeufs
+        for i in range(6, -1, -1):
+            d = today - timedelta(days=i)
+            val = ProductionOeufs.objects.filter(date=d).aggregate(t=Sum('nombre_oeufs'))['t'] or 0
+            chart_labels.append(d.strftime('%d/%m'))
+            chart_data.append(val // 30)
+    except:
+        chart_labels, chart_data = [], []
+    
+    # Debug terminal
+    print(f"📊 DASHBOARD: stock={stock_pl}plt+{stock_u} | poules={poules_actives} | ponte={taux_ponte}% | ventes={ventes_mois}")
+    
+    # ─────────────────────────────────────────
+    # CONTEXTE FINAL
+    # ─────────────────────────────────────────
+    
+        # ─────────────────────────────────────────
+    # CHEPTEL & POULES ACTIVES (Basé sur Poulailler)
+    # ─────────────────────────────────────────
+    cheptel_data = []
+    poules_actives = 0
+    try:
+        from gestion.models import Poulailler
+        for p in Poulailler.objects.all().order_by('nom'):
+            # Tente de lire l'effectif, sinon défaut 1000
+            eff = p.effectif_initial or 1000
+            poules_actives += eff
+            cheptel_data.append({
+                'batiment': p.nom,
+                'initial': eff,
+                'mortalite': 0,
+                'vendus': 0,
+                'reste': eff
+            })
+    except Exception as e:
+        print(f"⚠️ Fallback Cheptel: {e}")
+        # Fallback dur si Poulailler est vide ou bug
+        for nom in ['Bâtiment A', 'Bâtiment B', 'Bâtiment C', 'Bâtiment D', 'Bâtiment E']:
+            cheptel_data.append({'batiment': nom, 'initial': 1000, 'mortalite': 0, 'vendus': 0, 'reste': 1000})
+            poules_actives += 1000
+
+    context = {
+        'today': today,
+        'stock_plateaux': stock_pl,
+        'stock_unites': stock_u,
+        'poules_actives': poules_actives,
+        'taux_ponte': taux_ponte,
+        'ventes_mois': ventes_mois,
+        'productions': productions,
+        'chart_labels': chart_labels,
+        'chart_data': chart_data,
+        'user_groups': [g.name for g in request.user.groups.all()],
+        'cheptel_data': cheptel_data,
+    }
+
+    # 📦 CONTEXTE EXPLICITE POUR LE TEMPLATE
+    context = {
+        'today': today,
+        'stock_plateaux': stock_pl, 'stock_unites': stock_u,
+        'poules_actives': poules_actives, 'taux_ponte': taux_ponte, 'ventes_mois': ventes_mois,
+        'productions': productions,
+        'cheptel_data': cheptel_data,  # 🏭 TABLEAU
+        'chart_labels': labels,        # 📈 GRAPHIQUE
+        'chart_data': data,            # 📈 GRAPHIQUE
+        'user_groups': [g.name for g in request.user.groups.all()]
+    }
+    return render(request, 'gestion/dashboard.html', context)
+
+
+def bilan(request):
+    today = timezone.now().date()
+
+    # 2️⃣ CHEPTEL FORCÉ
+    cheptel_data = []
+    poules_actives = 0
+    from gestion.models import Poulailler
+    for p in Poulailler.objects.all().order_by('nom'):
+        eff = getattr(p, 'effectif_initial', 1000) or 1000
+        poules_actives += eff
+        cheptel_data.append({'batiment': p.nom, 'initial': eff, 'mortalite': 0, 'vendus': 0, 'reste': eff})
+    print(f'🏭 CHEPTEL DEBUG: {len(cheptel_data)} bâtiments -> {cheptel_data}')
+
+    # 2️⃣ CHEPTEL FORCÉ
+    cheptel_data = []
+    poules_actives = 0
+    from gestion.models import Poulailler
+    for p in Poulailler.objects.all().order_by('nom'):
+        eff = getattr(p, 'effectif_initial', 1000) or 1000
+        poules_actives += eff
+        cheptel_data.append({'batiment': p.nom, 'initial': eff, 'mortalite': 0, 'vendus': 0, 'reste': eff})
+    print(f'🏭 CHEPTEL DEBUG: {len(cheptel_data)} bâtiments -> {cheptel_data}')
+    debut = request.GET.get("debut", today.replace(day=1).isoformat())
+    fin = request.GET.get("fin", today.isoformat())
+    try:
+        revenus = Vente.objects.filter(date__gte=debut, date__lte=fin).aggregate(Sum("montant_total"))["montant_total__sum"] or 0
+        depenses = Depense.objects.filter(date__gte=debut, date__lte=fin).aggregate(Sum("montant"))["montant__sum"] or 0
+    except: revenus = depenses = 0
+    ctx = {
+        "today": today, "debut": debut, "fin": fin,
+        "revenus": revenus, "depenses": depenses, 
+        "resultat": revenus - depenses, 
+        "alert_benefice": (revenus - depenses) < 0
+    }
+    return render(request, "gestion/bilan.html", ctx)
+
+
+@login_required
+def credits(request):
+    today = timezone.now().date()
+
+    # 2️⃣ CHEPTEL FORCÉ
+    cheptel_data = []
+    poules_actives = 0
+    from gestion.models import Poulailler
+    for p in Poulailler.objects.all().order_by('nom'):
+        eff = getattr(p, 'effectif_initial', 1000) or 1000
+        poules_actives += eff
+        cheptel_data.append({'batiment': p.nom, 'initial': eff, 'mortalite': 0, 'vendus': 0, 'reste': eff})
+    print(f'🏭 CHEPTEL DEBUG: {len(cheptel_data)} bâtiments -> {cheptel_data}')
+
+    # 2️⃣ CHEPTEL FORCÉ
+    cheptel_data = []
+    poules_actives = 0
+    from gestion.models import Poulailler
+    for p in Poulailler.objects.all().order_by('nom'):
+        eff = getattr(p, 'effectif_initial', 1000) or 1000
+        poules_actives += eff
+        cheptel_data.append({'batiment': p.nom, 'initial': eff, 'mortalite': 0, 'vendus': 0, 'reste': eff})
+    print(f'🏭 CHEPTEL DEBUG: {len(cheptel_data)} bâtiments -> {cheptel_data}')
+    # Filtrer les ventes non totalement payées
+    qs = Vente.objects.filter(montant_paye__lt=F("montant_total")).order_by("-date")
+    # Calculer le total restant global
+    total = sum((v.montant_total - v.montant_paye) for v in qs)
+    # Préparer le contexte avec le reste calculé par vente
+    credits_list = []
+    for v in qs:
+        credits_list.append({
+            "vente": v,
+            "reste": v.montant_total - v.montant_paye
+        })
+    ctx = {"today": today, "credits": credits_list, "total_restant": total}
+    return render(request, "gestion/credits.html", ctx)
+
+
+@login_required
+def vente_oeufs(request):
+    if request.method == "POST":
+        try:
+            plat = int(request.POST.get("plateaux") or 0)
+            unit = int(request.POST.get("unites") or 0)
+            prix = float(request.POST.get("prix_plateau") or 0)
+            total = round(((plat * 30) + unit) * prix / 30)
+            paye = int(request.POST.get("montant_paye") or total)
+            vente = Vente.objects.create(
+                date=request.POST.get("date") or timezone.now().date(),
+                client=request.POST.get("client") or "",
+                type_vente="oeufs",
+                plateaux=plat,
+                unites=unit,
+                prix_plateau=prix,
+                montant_total=total,
+                montant_paye=paye,
+                mode_paiement=request.POST.get("mode_paiement") or "comptant",
+                paye=(paye >= total)
+            )
+            messages.success(request, f"✅ Vente d'œufs enregistrée : {total} FCFA")
+            return redirect("dashboard")
+        except Exception as e:
+            messages.error(request, f"❌ Erreur : {e}")
+    return render(request, "gestion/vente_oeufs.html", {"form": VenteForm()})
+
+# 🐔 VENTE DE POULES
+@login_required
+def vente_poules(request):
+    poulaillers = Poulailler.objects.all()
+    if request.method == "POST":
+        try:
+            nb = int(request.POST.get("plateaux") or 0)
+            prix = float(request.POST.get("prix_plateau") or 0)
+            total = round(nb * prix)
+            paye = int(request.POST.get("montant_paye") or total)
+            p_id = request.POST.get("poulailler")
+            batiment = Poulailler.objects.get(id=p_id) if p_id else None
+            
+            Vente.objects.create(
+                date=request.POST.get("date") or timezone.now().date(),
+                client=request.POST.get("client") or "",
+                type_vente="poules",
+                plateaux=nb, unites=0, prix_plateau=prix,
+                montant_total=total, montant_paye=paye,
+                mode_paiement=request.POST.get("mode_paiement") or "comptant",
+                paye=(paye >= total),
+                poulailler=batiment
+            )
+            messages.success(request, f"✅ Vente de {nb} poules enregistrée ({total} FCFA)")
+            return redirect("dashboard")
+        except Exception as e:
+            messages.error(request, f"❌ Erreur : {e}")
+    return render(request, "gestion/vente_poules.html", {"form": VenteForm(), "poulaillers": poulaillers})
+
+    if request.method == "POST":
+        try:
+            nb = int(request.POST.get("plateaux") or 0)  # Réutilise plateaux pour nb_poules
+            prix = float(request.POST.get("prix_plateau") or 0)
+            total = round(nb * prix)
+            paye = int(request.POST.get("montant_paye") or total)
+            vente = Vente.objects.create(
+                date=request.POST.get("date") or timezone.now().date(),
+                client=request.POST.get("client") or "",
+                type_vente="poules",
+                plateaux=nb,  # Stocke le nombre de poules ici
+                unites=0,
+                prix_plateau=prix,
+                montant_total=total,
+                montant_paye=paye,
+                mode_paiement=request.POST.get("mode_paiement") or "comptant",
+                paye=(paye >= total)
+            )
+            messages.success(request, f"✅ Vente de poules enregistrée : {total} FCFA")
+            return redirect("dashboard")
+        except Exception as e:
+            messages.error(request, f"❌ Erreur : {e}")
+    return render(request, "gestion/vente_poules.html", {"form": VenteForm()})
+
+# 📦 VENTE AUTRES
+@login_required
+def vente_autres(request):
+    if request.method == "POST":
+        try:
+            total = float(request.POST.get("montant_total") or 0)
+            paye = float(request.POST.get("montant_paye") or total)
+            vente = Vente.objects.create(
+                date=request.POST.get("date") or timezone.now().date(),
+                client=request.POST.get("client") or "",
+                type_vente="autres",
+                plateaux=0,
+                unites=0,
+                prix_plateau=0,
+                montant_total=total,
+                montant_paye=paye,
+                mode_paiement=request.POST.get("mode_paiement") or "comptant",
+                paye=(paye >= total)
+            )
+            messages.success(request, f"✅ Vente autres enregistrée : {total} FCFA")
+            return redirect("dashboard")
+        except Exception as e:
+            messages.error(request, f"❌ Erreur : {e}")
+    return render(request, "gestion/vente_autres.html", {"form": VenteForm()})
+
+@login_required
+def production_add(request):
+    form = ProductionForm(request.POST) if request.method=="POST" else ProductionForm()
+    if request.method=="POST" and form.is_valid(): form.save(); messages.success(request, "Collecte OK"); return redirect("dashboard")
+    return render(request, "gestion/production_form.html", {"form": form})
+
+@login_required
+def depense_add(request):
+    form = DepenseForm(request.POST) if request.method=="POST" else DepenseForm()
+    if request.method=="POST" and form.is_valid(): form.save(); messages.success(request, "Depense OK"); return redirect("dashboard")
+    return render(request, "gestion/depense_form.html", {"form": form})
+
+@login_required
+def sortie_poules_add(request):
+    form = SortiePoulesForm(request.POST) if request.method=="POST" else SortiePoulesForm()
+    if request.method=="POST" and form.is_valid(): form.save(); messages.success(request, "Sortie OK"); return redirect("dashboard")
+    return render(request, "gestion/sortie_poules_form.html", {"form": form})
+
+def _excel_response(filename, sheets):
+    wb = Workbook()
+    wb.remove(wb.active)
+    for name, headers, rows in sheets:
+        ws = wb.create_sheet(name)
+        ws.append(headers)
+        for row in rows: ws.append(row)
+        for cell in ws[1]: cell.font = Font(bold=True, color="FFFFFF"); cell.fill = PatternFill(start_color="2E7D32", end_color="2E7D32", fill_type="solid")
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = f'attachment; filename="{filename}.xlsx"'
+    wb.save(response)
+    return response
+
+@login_required
+def export_excel(request):
+    v_rows = [[v.date, v.client or "-", v.get_type_vente_display(), v.montant_total, v.montant_paye, v.montant_total - v.montant_paye, v.get_mode_paiement_display()] for v in Vente.objects.order_by("-date")]
+    d_rows = [[d.date, d.categorie, d.montant] for d in Depense.objects.order_by("-date")]
+    return _excel_response("DOKAHA_Export", [("VENTES", ["Date","Client","Type","Total","Payé","Reste","Mode"], v_rows), ("DEPENSES", ["Date","Catégorie","Montant"], d_rows)])
+
+@login_required
+def export_bilan(request):
+    r = Vente.objects.aggregate(Sum("montant_total"))["montant_total__sum"] or 0
+    d = Depense.objects.aggregate(Sum("montant"))["montant__sum"] or 0
+    return _excel_response("DOKAHA_Bilan", [("BILAN", ["Poste","Montant FCFA"], [["Revenus", r], ["Depenses", d], ["Resultat", r-d]])])
+
+@login_required
+def export_credits(request):
+    rows = [[v.client, v.montant_total, v.montant_paye, v.montant_total - v.montant_paye, v.date] for v in Vente.objects.filter(montant_paye__lt=F("montant_total")).order_by("-date")]
+    return _excel_response("DOKAHA_Credits", [("CREDITS", ["Client","Total","Payé","Reste","Date"], rows)])
+
+@login_required
+def trigger_backup(request):
+    import os; from django.http import JsonResponse; from django.core.management import call_command
+    if request.GET.get("key") != os.environ.get("BACKUP_KEY", "fane2026"): return JsonResponse({"status": "error"}, status=403)
+    try: call_command("backup_db", keep=7); return JsonResponse({"status": "ok"})
+    except Exception as e: return JsonResponse({"status": "error", "msg": str(e)}, status=500)

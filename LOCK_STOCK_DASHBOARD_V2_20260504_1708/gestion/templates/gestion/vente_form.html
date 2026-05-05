@@ -1,0 +1,79 @@
+{% extends 'gestion/base.html' %}
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0">📝 Vente de {{ type_vente|capfirst|default:"Œufs" }}</h3>
+        <span class="badge bg-{% if type_vente == 'poulets' %}danger{% elif type_vente == 'autres' %}info{% else %}warning{% endif %} fs-6">{{ type_vente|capfirst|default:"Œufs" }}</span>
+    </div>
+
+    <form method="POST" class="card p-4 shadow-sm">
+        {% csrf_token %}
+        <input type="hidden" name="type_vente" value="{{ type_vente }}">
+        
+        <!-- 📦 Informations de base -->
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label fw-bold">👤 Client</label>
+                <input type="text" name="client" class="form-control" placeholder="Nom ou 'Comptoir'" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">📦 Quantité</label>
+                <input type="number" name="plateaux" id="quantite" class="form-control" min="1" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold">💰 Prix unitaire (F)</label>
+                <input type="number" name="prix_plateau" id="prix_unitaire" class="form-control" min="0" required>
+            </div>
+        </div>
+
+        <!-- 💳 Bloc Paiement Comptable -->
+        <div class="mt-4 p-3 bg-light rounded border">
+            <label class="form-label fw-bold mb-3">💳 Détail du paiement</label>
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">💰 Montant Total</label>
+                    <input type="number" id="montant_total" class="form-control fw-bold bg-white" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold">💵 Montant Payé</label>
+                    <input type="number" name="montant_paye" id="montant_paye" class="form-control" min="0" value="0" required>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small text-muted">⏳ Reste à payer</label>
+                    <input type="number" id="montant_restant" class="form-control fw-bold bg-white" readonly>
+                </div>
+            </div>
+            <small class="text-muted mt-2 d-block"><i class="fas fa-info-circle me-1"></i>Le reste est calculé automatiquement. Saisir 0 F si paiement intégral.</small>
+        </div>
+
+        <div class="mt-4 d-flex gap-2 align-items-center">
+            <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Valider la vente</button>
+            <a href="/vente/add/" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function calculerPaiement() {
+    const qte = parseFloat(document.getElementById('quantite').value) || 0;
+    const prix = parseFloat(document.getElementById('prix_unitaire').value) || 0;
+    const total = qte * prix;
+    const paye = parseFloat(document.getElementById('montant_paye').value) || 0;
+    const reste = Math.max(0, total - paye);
+    
+    document.getElementById('montant_total').value = total;
+    document.getElementById('montant_restant').value = reste;
+    
+    // Feedback visuel
+    const resteInput = document.getElementById('montant_restant');
+    resteInput.classList.remove('text-success', 'text-danger');
+    resteInput.classList.add(reste > 0 ? 'text-danger' : 'text-success');
+}
+// Écouteurs d'événements
+['quantite', 'prix_unitaire', 'montant_paye'].forEach(id => {
+    document.getElementById(id).addEventListener('input', calculerPaiement);
+});
+// Calcul initial
+calculerPaiement();
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends 'gestion/base.html' %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">📝 Nouveau Mouvement Stock</h2>
+        <a href="/stock/" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Retour au Stock
+        </a>
+    </div>
+
+    <!-- Formulaire -->
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        
+                        <!-- Produit -->
+                        <div class="mb-3">
+                            <label for="{{ form.produit.id_for_label }}" class="form-label fw-bold">
+                                {{ form.produit.label }} *
+                            </label>
+                            {{ form.produit }}
+                            {% if form.produit.errors %}
+                                <div class="text-danger small">{{ form.produit.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Type de mouvement -->
+                        <div class="mb-3">
+                            <label for="{{ form.type_mouvement.id_for_label }}" class="form-label fw-bold">
+                                {{ form.type_mouvement.label }} *
+                            </label>
+                            {{ form.type_mouvement }}
+                            {% if form.type_mouvement.errors %}
+                                <div class="text-danger small">{{ form.type_mouvement.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Quantité -->
+                        <div class="mb-3">
+                            <label for="{{ form.quantite.id_for_label }}" class="form-label fw-bold">
+                                {{ form.quantite.label }} *
+                            </label>
+                            {{ form.quantite }}
+                            {% if form.quantite.errors %}
+                                <div class="text-danger small">{{ form.quantite.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Commentaire -->
+                        <div class="mb-4">
+                            <label for="{{ form.commentaire.id_for_label }}" class="form-label fw-bold">
+                                {{ form.commentaire.label }}
+                            </label>
+                            {{ form.commentaire }}
+                            {% if form.commentaire.errors %}
+                                <div class="text-danger small">{{ form.commentaire.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Boutons -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>Enregistrer le Mouvement
+                            </button>
+                            <a href="/stock/" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Annuler
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Aide contextuelle -->
+            <div class="mt-4 p-3 bg-light rounded small">
+                <strong>💡 Rappel :</strong>
+                <ul class="mb-0 mt-2">
+                    <li>📥 <strong>Entrée</strong> = Ajout au stock (réception, production)</li>
+                    <li>📤 <strong>Sortie</strong> = Retrait du stock (vente, consommation, perte)</li>
+                    <li>Le stock actuel sera recalculé automatiquement après enregistrement</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

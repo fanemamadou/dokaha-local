@@ -1,0 +1,40 @@
+{% extends 'gestion/base.html' %}
+{% block content %}
+<div class="container-fluid py-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="mb-0">{{ title }}</h3>
+        <a href="/vente/add/" class="btn btn-success shadow-sm"><i class="fas fa-plus me-2"></i>Nouvelle Vente</a>
+    </div>
+
+    <!-- Stats rapides -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-6"><div class="card p-3 border-start border-4 border-primary"><h6>Plateaux vendus</h6><h3 class="text-primary">{{ total_plt }}</h3></div></div>
+        <div class="col-md-6"><div class="card p-3 border-start border-4 border-success"><h6>CA Total</h6><h3 class="text-success">{{ total_ca }} FCFA</h3></div></div>
+    </div>
+
+    <!-- Tableau -->
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr><th>Date</th><th>Client</th><th>Type</th><th>Plateaux</th><th>Prix/U</th><th>Total</th></tr>
+                </thead>
+                <tbody>
+                    {% for v in ventes %}
+                    <tr>
+                        <td>{{ v.date|date:"d/m/Y" }}</td>
+                        <td class="fw-bold">{{ v.client|default:"-" }}</td>
+                        <td><span class="badge bg-{% if 'oeuf' in v.type_vente|lower %}warning{% elif 'poul' in v.type_vente|lower %}danger{% else %}info{% endif %}">{{ v.type_vente|title }}</span></td>
+                        <td>{{ v.plateaux|default:0 }}</td>
+                        <td>{{ v.prix_plateau|default:0 }} F</td>
+                        <td class="fw-bold text-success">{{ v.montant_total|default:0 }} F</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center py-4 text-muted">Aucune vente enregistrée. <a href="/vente/add/" class="text-decoration-none">➕ Enregistrer la première</a></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

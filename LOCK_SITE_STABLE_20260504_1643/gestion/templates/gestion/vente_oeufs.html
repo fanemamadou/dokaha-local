@@ -1,0 +1,71 @@
+{% extends "gestion/base.html" %}
+{% block title %}Vente d'Œufs{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h3 class="fw-bold mb-4">🥚 Vente d'Œufs</h3>
+    <form method="post" class="card p-4 shadow-sm" id="form-oeufs">
+        {% csrf_token %}
+        <div class="row g-3">
+            <div class="col-md-6">{{ form.date.label_tag }} {{ form.date }}</div>
+            <div class="col-md-6">{{ form.client.label_tag }} {{ form.client }}</div>
+            <div class="col-md-4">
+                <label>📦 Plateaux (30 œufs)</label>
+                <input type="number" name="plateaux" id="id_plateaux" class="form-control" value="{{ form.plateaux.value|default:0 }}" min="0" oninput="calcTotal()">
+            </div>
+            <div class="col-md-4">
+                <label>🥚 Unités restantes (0-29)</label>
+                <input type="number" name="unites" id="id_unites" class="form-control" value="{{ form.unites.value|default:0 }}" min="0" max="29" oninput="calcTotal()">
+            </div>
+            <div class="col-md-4">
+                <label>💵 Prix par plateau (FCFA)</label>
+                <input type="number" name="prix_plateau" id="id_prix_plateau" class="form-control" value="{{ form.prix_plateau.value|default:0 }}" min="0" step="1" oninput="calcTotal()">
+            </div>
+            <div class="col-12 mt-3">
+                <label>💰 Montant total (FCFA)</label>
+                <input type="number" name="montant_total" id="id_montant_total" class="form-control bg-light" value="{{ form.montant_total.value|default:0 }}" readonly>
+                <small class="text-muted">Calculé automatiquement</small>
+            </div>
+            <div class="col-md-6">
+                <label>💳 Montant payé (FCFA)</label>
+                <input type="number" name="montant_paye" id="id_montant_paye" class="form-control" value="{{ form.montant_paye.value|default:0 }}" min="0" oninput="checkPaye()">
+            </div>
+            <div class="col-md-6">
+                <label>📝 Mode de paiement</label>
+                <select name="mode_paiement" id="id_mode_paiement" class="form-select">
+                    <option value="comptant" {% if form.mode_paiement.value == "comptant" %}selected{% endif %}>💵 Comptant</option>
+                    <option value="credit" {% if form.mode_paiement.value == "credit" %}selected{% endif %}>📝 Crédit</option>
+                    <option value="mobile" {% if form.mode_paiement.value == "mobile" %}selected{% endif %}>📱 Mobile Money</option>
+                    <option value="cheque" {% if form.mode_paiement.value == "cheque" %}selected{% endif %}>🧾 Chèque</option>
+                </select>
+            </div>
+        </div>
+        <div class="d-flex gap-2 mt-4">
+            <button type="submit" class="btn btn-success fw-bold px-4">💾 Enregistrer</button>
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
+
+<script>
+function calcTotal() {
+    var plat = parseInt(document.getElementById('id_plateaux').value) || 0;
+    var unit = parseInt(document.getElementById('id_unites').value) || 0;
+    var prix = parseFloat(document.getElementById('id_prix_plateau').value) || 0;
+    var total = Math.round(((plat * 30) + unit) * prix / 30);
+    document.getElementById('id_montant_total').value = total;
+    // Auto-fill montant_paye si vide ou égal au précédent total
+    var paye = document.getElementById('id_montant_paye');
+    if (!paye.value || paye.value == 0) paye.value = total;
+}
+function checkPaye() {
+    var total = parseFloat(document.getElementById('id_montant_total').value) || 0;
+    var paye = parseFloat(document.getElementById('id_montant_paye').value) || 0;
+    if (paye > total) {
+        alert("⚠️ Le montant payé ne peut pas dépasser le total !");
+        document.getElementById('id_montant_paye').value = total;
+    }
+}
+// Init
+calcTotal();
+</script>
+{% endblock %}

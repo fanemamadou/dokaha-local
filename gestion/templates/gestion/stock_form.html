@@ -1,0 +1,27 @@
+{% extends 'gestion/base.html' %}
+{% block title %}{{ title }} - DOKAHA{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <!-- ✅ CORRECTION : Syntaxe Django compatible pour la couleur -->
+            <div class="card-header {% if type == 'entree' %}bg-success{% else %}bg-danger{% endif %} text-white">
+                <h4 class="mb-0">{{ title }}</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                    <div class="d-grid gap-2 mt-3">
+                        <!-- ✅ Même correction pour le bouton -->
+                        <button type="submit" class="btn {% if type == 'entree' %}btn-success{% else %}btn-danger{% endif %}">
+                            ✅ Valider
+                        </button>
+                        <a href="{% url 'stock_dashboard' %}" class="btn btn-outline-secondary">Annuler</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

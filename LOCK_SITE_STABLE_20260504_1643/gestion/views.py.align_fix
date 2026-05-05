@@ -1,0 +1,254 @@
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.utils import timezone
+from django.http import HttpResponse
+from django.db.models import Sum, F
+from .models import ProductionOeufs, Vente, Poulailler, Depense, SortiePoules
+from .forms import ProductionForm, VenteForm, DepenseForm, SortiePoulesForm
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill
+
+def accueil(request): return render(request, "gestion/accueil.html")
+
+@login_required
+def vente_choice(request):
+    return render(request, "gestion/vente_choice.html")
+
+@login_required
+@login_required
+def dashboard(request):
+    from django.db.models import Sum
+    from datetime import timedelta
+    today = timezone.now().date()
+
+    # 1. Production (30 jours glissants)
+    date_start = today - timedelta(days=30)
+    agg = ProductionOeufs.objects.filter(date__gte=date_start).aggregate(total=Sum('nombre_oeufs'))
+    total_30j = agg['total'] or 0
+    plateaux_prod = total_30j // 30
+    restes_prod = total_30j % 30
+
+    # 2. Graphique 7j
+    labels, data = [], []
+    for i in range(6, -1, -1):
+        d = today - timedelta(days=i)
+        val = ProductionOeufs.objects.filter(date=d).aggregate(t=Sum('nombre_oeufs'))['t'] or 0
+        labels.append(d.strftime('%d/%m'))
+        data.append(val // 30)
+
+    # 3. Stock (sécurisé)
+    try: stock_pl, stock_u = MouvementStock.stock_actuel()
+    except: stock_pl, stock_u = plateaux_prod, restes_prod
+
+    # 4. Cheptel (sécurisé)
+    try: total_poules = LotPoules.objects.aggregate(t=Sum('effectif_actuel'))['t'] or 5000
+    except: total_poules = 5000
+
+    # Debug
+    print(f"📊 DASHBOARD: Stock={stock_pl}plt+{stock_u} | Prod30j={plateaux_prod}plt+{restes_prod} | Cheptel={total_poules}")
+
+    context = {
+        'stock_plateaux': stock_pl, 'stock_unites': stock_u,
+        'plateaux_prod': plateaux_prod, 'restes_prod': restes_prod,
+        'chart_labels': labels, 'chart_data': data,
+        'total_poules': total_poules,
+        'user_groups': [g.name for g in request.user.groups.all()],
+    }
+    return render(request, 'gestion/dashboard.html', context)
+
+
+def bilan(request):
+    today = timezone.now().date()
+    debut = request.GET.get("debut", today.replace(day=1).isoformat())
+    fin = request.GET.get("fin", today.isoformat())
+    try:
+        revenus = Vente.objects.filter(date__gte=debut, date__lte=fin).aggregate(Sum("montant_total"))["montant_total__sum"] or 0
+        depenses = Depense.objects.filter(date__gte=debut, date__lte=fin).aggregate(Sum("montant"))["montant__sum"] or 0
+    except: revenus = depenses = 0
+    ctx = {
+        "today": today, "debut": debut, "fin": fin,
+        "revenus": revenus, "depenses": depenses, 
+        "resultat": revenus - depenses, 
+        "alert_benefice": (revenus - depenses) < 0
+    }
+    return render(request, "gestion/bilan.html", ctx)
+
+
+@login_required
+def credits(request):
+    today = timezone.now().date()
+    # Filtrer les ventes non totalement payées
+    qs = Vente.objects.filter(montant_paye__lt=F("montant_total")).order_by("-date")
+    # Calculer le total restant global
+    total = sum((v.montant_total - v.montant_paye) for v in qs)
+    # Préparer le contexte avec le reste calculé par vente
+    credits_list = []
+    for v in qs:
+        credits_list.append({
+            "vente": v,
+            "reste": v.montant_total - v.montant_paye
+        })
+    ctx = {"today": today, "credits": credits_list, "total_restant": total}
+    return render(request, "gestion/credits.html", ctx)
+
+
+@login_required
+def vente_oeufs(request):
+    if request.method == "POST":
+        try:
+            plat = int(request.POST.get("plateaux") or 0)
+            unit = int(request.POST.get("unites") or 0)
+            prix = float(request.POST.get("prix_plateau") or 0)
+            total = round(((plat * 30) + unit) * prix / 30)
+            paye = int(request.POST.get("montant_paye") or total)
+            vente = Vente.objects.create(
+                date=request.POST.get("date") or timezone.now().date(),
+                client=request.POST.get("client") or "",
+                type_vente="oeufs",
+                plateaux=plat,
+                unites=unit,
+                prix_plateau=prix,
+                montant_total=total,
+                montant_paye=paye,
+                mode_paiement=request.POST.get("mode_paiement") or "comptant",
+                paye=(paye >= total)
+            )
+            messages.success(request, f"✅ Vente d'œufs enregistrée : {total} FCFA")
+            return redirect("dashboard")
+        except Exception as e:
+            messages.error(request, f"❌ Erreur : {e}")
+    return render(request, "gestion/vente_oeufs.html", {"form": VenteForm()})
+
+# 🐔 VENTE DE POULES
+@login_required
+def vente_poules(request):
+    poulaillers = Poulailler.objects.all()
+    if request.method == "POST":
+        try:
+            nb = int(request.POST.get("plateaux") or 0)
+            prix = float(request.POST.get("prix_plateau") or 0)
+            total = round(nb * prix)
+            paye = int(request.POST.get("montant_paye") or total)
+            p_id = request.POST.get("poulailler")
+            batiment = Poulailler.objects.get(id=p_id) if p_id else None
+            
+            Vente.objects.create(
+                date=request.POST.get("date") or timezone.now().date(),
+                client=request.POST.get("client") or "",
+                type_vente="poules",
+                plateaux=nb, unites=0, prix_plateau=prix,
+                montant_total=total, montant_paye=paye,
+                mode_paiement=request.POST.get("mode_paiement") or "comptant",
+                paye=(paye >= total),
+                poulailler=batiment
+            )
+            messages.success(request, f"✅ Vente de {nb} poules enregistrée ({total} FCFA)")
+            return redirect("dashboard")
+        except Exception as e:
+            messages.error(request, f"❌ Erreur : {e}")
+    return render(request, "gestion/vente_poules.html", {"form": VenteForm(), "poulaillers": poulaillers})
+
+    if request.method == "POST":
+        try:
+            nb = int(request.POST.get("plateaux") or 0)  # Réutilise plateaux pour nb_poules
+            prix = float(request.POST.get("prix_plateau") or 0)
+            total = round(nb * prix)
+            paye = int(request.POST.get("montant_paye") or total)
+            vente = Vente.objects.create(
+                date=request.POST.get("date") or timezone.now().date(),
+                client=request.POST.get("client") or "",
+                type_vente="poules",
+                plateaux=nb,  # Stocke le nombre de poules ici
+                unites=0,
+                prix_plateau=prix,
+                montant_total=total,
+                montant_paye=paye,
+                mode_paiement=request.POST.get("mode_paiement") or "comptant",
+                paye=(paye >= total)
+            )
+            messages.success(request, f"✅ Vente de poules enregistrée : {total} FCFA")
+            return redirect("dashboard")
+        except Exception as e:
+            messages.error(request, f"❌ Erreur : {e}")
+    return render(request, "gestion/vente_poules.html", {"form": VenteForm()})
+
+# 📦 VENTE AUTRES
+@login_required
+def vente_autres(request):
+    if request.method == "POST":
+        try:
+            total = float(request.POST.get("montant_total") or 0)
+            paye = float(request.POST.get("montant_paye") or total)
+            vente = Vente.objects.create(
+                date=request.POST.get("date") or timezone.now().date(),
+                client=request.POST.get("client") or "",
+                type_vente="autres",
+                plateaux=0,
+                unites=0,
+                prix_plateau=0,
+                montant_total=total,
+                montant_paye=paye,
+                mode_paiement=request.POST.get("mode_paiement") or "comptant",
+                paye=(paye >= total)
+            )
+            messages.success(request, f"✅ Vente autres enregistrée : {total} FCFA")
+            return redirect("dashboard")
+        except Exception as e:
+            messages.error(request, f"❌ Erreur : {e}")
+    return render(request, "gestion/vente_autres.html", {"form": VenteForm()})
+
+@login_required
+def production_add(request):
+    form = ProductionForm(request.POST) if request.method=="POST" else ProductionForm()
+    if request.method=="POST" and form.is_valid(): form.save(); messages.success(request, "Collecte OK"); return redirect("dashboard")
+    return render(request, "gestion/production_form.html", {"form": form})
+
+@login_required
+def depense_add(request):
+    form = DepenseForm(request.POST) if request.method=="POST" else DepenseForm()
+    if request.method=="POST" and form.is_valid(): form.save(); messages.success(request, "Depense OK"); return redirect("dashboard")
+    return render(request, "gestion/depense_form.html", {"form": form})
+
+@login_required
+def sortie_poules_add(request):
+    form = SortiePoulesForm(request.POST) if request.method=="POST" else SortiePoulesForm()
+    if request.method=="POST" and form.is_valid(): form.save(); messages.success(request, "Sortie OK"); return redirect("dashboard")
+    return render(request, "gestion/sortie_poules_form.html", {"form": form})
+
+def _excel_response(filename, sheets):
+    wb = Workbook()
+    wb.remove(wb.active)
+    for name, headers, rows in sheets:
+        ws = wb.create_sheet(name)
+        ws.append(headers)
+        for row in rows: ws.append(row)
+        for cell in ws[1]: cell.font = Font(bold=True, color="FFFFFF"); cell.fill = PatternFill(start_color="2E7D32", end_color="2E7D32", fill_type="solid")
+    response = HttpResponse(content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    response["Content-Disposition"] = f'attachment; filename="{filename}.xlsx"'
+    wb.save(response)
+    return response
+
+@login_required
+def export_excel(request):
+    v_rows = [[v.date, v.client or "-", v.get_type_vente_display(), v.montant_total, v.montant_paye, v.montant_total - v.montant_paye, v.get_mode_paiement_display()] for v in Vente.objects.order_by("-date")]
+    d_rows = [[d.date, d.categorie, d.montant] for d in Depense.objects.order_by("-date")]
+    return _excel_response("DOKAHA_Export", [("VENTES", ["Date","Client","Type","Total","Payé","Reste","Mode"], v_rows), ("DEPENSES", ["Date","Catégorie","Montant"], d_rows)])
+
+@login_required
+def export_bilan(request):
+    r = Vente.objects.aggregate(Sum("montant_total"))["montant_total__sum"] or 0
+    d = Depense.objects.aggregate(Sum("montant"))["montant__sum"] or 0
+    return _excel_response("DOKAHA_Bilan", [("BILAN", ["Poste","Montant FCFA"], [["Revenus", r], ["Depenses", d], ["Resultat", r-d]])])
+
+@login_required
+def export_credits(request):
+    rows = [[v.client, v.montant_total, v.montant_paye, v.montant_total - v.montant_paye, v.date] for v in Vente.objects.filter(montant_paye__lt=F("montant_total")).order_by("-date")]
+    return _excel_response("DOKAHA_Credits", [("CREDITS", ["Client","Total","Payé","Reste","Date"], rows)])
+
+@login_required
+def trigger_backup(request):
+    import os; from django.http import JsonResponse; from django.core.management import call_command
+    if request.GET.get("key") != os.environ.get("BACKUP_KEY", "fane2026"): return JsonResponse({"status": "error"}, status=403)
+    try: call_command("backup_db", keep=7); return JsonResponse({"status": "ok"})
+    except Exception as e: return JsonResponse({"status": "error", "msg": str(e)}, status=500)

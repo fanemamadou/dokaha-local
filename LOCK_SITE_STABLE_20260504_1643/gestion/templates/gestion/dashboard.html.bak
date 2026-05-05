@@ -1,0 +1,50 @@
+{% extends "gestion/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <h3 class="mb-4 text-center fw-bold">📊 Pilotage DOKAHA <span class="text-muted fs-6">({{ today|date:"d/m/Y" }})</span></h3>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3"><div class="card bg-primary text-white text-center p-3 shadow-sm h-100"><h6 class="mb-1">📦 Stock Œufs</h6><h2 class="mb-0 fw-bold">{{ stock_oeufs }}</h2><small>en magasin</small></div></div>
+        <div class="col-6 col-md-3"><div class="card bg-info text-white text-center p-3 shadow-sm h-100"><h6 class="mb-1">🐔 Poules Actives</h6><h2 class="mb-0 fw-bold">{{ poules_actives }}</h2><small>en production</small></div></div>
+        <div class="col-6 col-md-3"><div class="card bg-warning text-dark text-center p-3 shadow-sm h-100"><h6 class="mb-1">📈 Taux Ponte (7j)</h6><h2 class="mb-0 fw-bold">{{ taux_ponte }}%</h2><small>par poule active</small></div></div>
+        <div class="col-6 col-md-3"><div class="card bg-success text-white text-center p-3 shadow-sm h-100"><h6 class="mb-1">💰 Ventes Mois</h6><h2 class="mb-0 fw-bold">--</h2><small>revenus œufs</small></div></div>
+    </div>
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3"><a href="{% url 'production_add' %}" class="btn btn-outline-primary w-100 py-3 fw-bold">+ Collecte</a></div>
+        <div class="col-6 col-md-3"><a href="{% url 'vente_add' %}" class="btn btn-outline-success w-100 py-3 fw-bold">+ Vente Œufs</a></div>
+        <div class="col-6 col-md-3"><a href="{% url 'sortie_poules_add' %}" class="btn btn-outline-secondary w-100 py-3 fw-bold">🪦 Mortalité</a></div>
+        <div class="col-6 col-md-3"><a href="{% url 'sortie_poules_add' %}" class="btn btn-outline-dark w-100 py-3 fw-bold">💰 Vente Poules</a></div>
+    </div>
+    <div class="card mb-4 shadow-sm"><div class="card-header bg-white fw-bold">📈 Production (7 derniers jours)</div><div class="card-body"><div style="height: 250px; position: relative;"><canvas id="prodChart"></canvas></div></div></div>
+    <div class="card shadow-sm"><div class="card-header bg-white fw-bold">📋 Dernières collectes</div>
+        <ul class="list-group list-group-flush">{% for p in productions %}
+            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                <span><span class="fw-bold text-primary">{{ p.date|date:"d/m" }}</span> <span class="text-muted">• {{ p.poulailler }}</span></span>
+                <span class="badge bg-success bg-opacity-10 text-success px-3 py-2">{{ p.nombre_oeufs }} œufs</span>
+            </li>{% empty %}<li class="list-group-item text-muted text-center py-4">Aucune collecte enregistrée.</li>{% endfor %}
+        </ul>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('prodChart');
+    if (ctx) {
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ prod_dates|safe }},
+                datasets: [{
+                    label: 'Œufs collectés',
+                    data: {{ prod_values|safe }},
+                    backgroundColor: 'rgba(46, 125, 50, 0.75)',
+                    borderRadius: 6,
+                    maxBarThickness: 40
+                }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
+        });
+    }
+});
+</script>
+{% endblock %}

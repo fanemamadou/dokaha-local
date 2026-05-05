@@ -1,0 +1,36 @@
+from django import forms
+from django.utils import timezone
+from .models import ProductionOeufs, Vente, Depense, Poulailler
+
+class ProductionForm(forms.ModelForm):
+    class Meta:
+        model = ProductionOeufs
+        fields = ['date', 'poulailler', 'nombre_oeufs', 'oeufs_casses']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'poulailler': forms.Select(attrs={'class': 'form-control'}),
+            'nombre_oeufs': forms.NumberInput(attrs={'inputmode': 'numeric', 'class': 'form-control'}),
+            'oeufs_casses': forms.NumberInput(attrs={'inputmode': 'numeric', 'class': 'form-control'})
+        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:
+            self.fields['date'].initial = timezone.now().date()
+            self.fields['poulailler'].queryset = Poulailler.objects.all()
+            self.fields['poulailler'].empty_label = "-- Sélectionner un bâtiment --"
+
+class VenteForm(forms.ModelForm):
+    class Meta:
+        model = Vente
+        fields = '__all__'
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        }
+
+class DepenseForm(forms.ModelForm):
+    class Meta:
+        model = Depense
+        fields = '__all__'
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+        }

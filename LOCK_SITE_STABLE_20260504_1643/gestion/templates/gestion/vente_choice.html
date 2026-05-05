@@ -1,0 +1,40 @@
+{% extends 'gestion/base.html' %}
+{% block content %}
+<div class="container py-4">
+    <h3 class="mb-4 text-center">💰 Enregistrer une Vente</h3>
+    <p class="text-muted text-center mb-4">Sélectionnez le type de produit :</p>
+    <div class="row g-4 justify-content-center">
+        <div class="col-md-4">
+            <a href="/vente/oeufs/" class="card text-decoration-none shadow-sm border-warning hover-scale">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-egg fa-3x text-warning mb-3"></i>
+                    <h5 class="card-title">🥚 Œufs</h5>
+                    <p class="text-muted small">Plateaux d'œufs</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="/vente/poulets/" class="card text-decoration-none shadow-sm border-danger hover-scale">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-drumstick-bite fa-3x text-danger mb-3"></i>
+                    <h5 class="card-title">🐔 Poulets</h5>
+                    <p class="text-muted small">Volailles vives</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="/vente/autres/" class="card text-decoration-none shadow-sm border-info hover-scale">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-box-open fa-3x text-info mb-3"></i>
+                    <h5 class="card-title">📦 Autres</h5>
+                    <p class="text-muted small">Fumier, matériel...</p>
+                </div>
+            </a>
+        </div>
+    </div>
+    <div class="text-center mt-4">
+        <a href="/vente/" class="btn btn-outline-secondary">← Retour à l'historique</a>
+    </div>
+</div>
+<style>.hover-scale:hover{transform:translateY(-5px);transition:0.3s}</style>
+{% endblock %}

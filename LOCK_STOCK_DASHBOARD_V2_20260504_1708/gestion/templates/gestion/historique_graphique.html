@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Historique - DOKAHA</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-light">
+<!-- 🧭 MENU PRINCIPAL -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3 shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/dashboard/">🐔 DOKAHA</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#dokahaNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="dokahaNav">
+            <ul class="navbar-nav me-auto">
+                <li class="nav-item"><a class="nav-link" href="/dashboard/">📊 Pilotage</a></li>
+                <li class="nav-item"><a class="nav-link" href="/stock/">📦 Stock</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/historique/">📈 Historique</a></li>
+                <li class="nav-item"><a class="nav-link" href="/admin/">⚙️ Admin</a></li>
+            
+{% if user.is_authenticated %}
+  {% for g in user.groups.all %}
+    {% if g.name == 'DG' %}
+      <li class="nav-item">
+        <a class="nav-link text-danger fw-bold" href="/dg/">🎯 Bilan DG</a>
+      </li>
+    {% endif %}
+  {% endfor %}
+{% endif %}
+
+            </ul>
+            <span class="navbar-text text-light opacity-75 small">{{ start_date|date:"d/m" }} → {{ end_date|date:"d/m/Y" }}</span>
+        </div>
+    </div>
+</nav>
+
+<div class="container py-3">
+    <h3 class="mb-4">📈 Historique de Production <span class="badge bg-primary ms-2">{{ period }} jours</span></h3>
+
+    <!-- 🎛️ FILTRES PÉRIODE -->
+    <div class="btn-group mb-4" role="group">
+        {% for p in periods %}
+        <a href="?period={{ p }}" class="btn btn-outline-primary {% if period == p %}active{% endif %}">{{ p }}j</a>
+        {% endfor %}
+    </div>
+
+    <!-- 📊 INDICATEURS CLÉS -->
+    <div class="row g-3 mb-4">
+        <div class="col-4 col-md-2"><div class="card text-center p-2 bg-info text-white">
+            <h5 class="mb-0">{{ avg_prod|floatformat:1 }}</h5><small class="opacity-75">Moy. plateaux/j</small></div></div>
+        <div class="col-4 col-md-2"><div class="card text-center p-2 bg-success text-white">
+            <h5 class="mb-0">{{ max_prod }}</h5><small class="opacity-75">Pic (plateaux)</small></div></div>
+        <div class="col-4 col-md-3"><div class="card text-center p-2 bg-warning text-dark">
+            <h5 class="mb-0">{{ trend }}</h5><small class="opacity-75">Tendance (7j)</small></div></div>
+        <div class="col-6 col-md-3"><div class="card text-center p-2 bg-secondary text-white">
+            <h5 class="mb-0">{{ nb_jours }}</h5><small class="opacity-75">Jours analysés</small></div></div>
+        <div class="col-6 col-md-2"><div class="card text-center p-2 bg-primary text-white">
+            <h5 class="mb-0">{{ total_plateaux }}</h5><small class="opacity-75">Total plateaux</small></div></div>
+    </div>
+
+    <!-- 📈 GRAPHIQUE PRODUCTION -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
+            <span>🥚 Production d'œufs (plateaux/jour)</span>
+            <small class="text-muted">1 plateau = 30 œufs</small>
+        </div>
+        <div class="card-body"><canvas id="prodChart" height="100"></canvas></div>
+    </div>
+
+    <!-- 📦 GRAPHIQUE STOCK (si données) -->
+    {% if stock_series %}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-white fw-bold">📦 Évolution des Stocks</div>
+        <div class="card-body"><canvas id="stockChart" height="100"></canvas></div>
+    </div>
+    {% endif %}
+
+    <!-- 📋 TABLEAU RÉCAPITULATIF -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white fw-bold">📋 Données brutes ({{ period }} jours)</div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="table-dark"><tr><th>Date</th><th>Œufs</th><th>Plateaux</th><th>Taux ponte*</th></tr></thead>
+                <tbody>
+                    {% for item in data_pairs %}
+                    <tr>
+                        <td class="text-muted small">{{ item.date }}</td>
+                        <td class="fw-bold">{{ item.oeufs }}</td>
+                        <td><span class="badge bg-primary">{{ item.plateaux }}</span></td>
+                        <td class="text-muted small">—</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer text-muted small">* Taux de ponte calculé sur le cheptel actif du jour</div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// 📈 Graphique Production
+const prodCtx = document.getElementById('prodChart');
+if (prodCtx) {
+    new Chart(prodCtx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Plateaux produits',
+                data: {{ prod_data|safe }},
+                borderColor: '#3498db',
+                backgroundColor: 'rgba(52,152,219,0.1)',
+                fill: true,
+                tension: 0.3,
+                pointRadius: 3,
+                pointHoverRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Plateaux' } },
+                x: { title: { display: true, text: 'Date' } }
+            }
+        }
+    });
+}
+
+// 📦 Graphique Stock (multi-séries)
+{% if stock_series %}
+const stockCtx = document.getElementById('stockChart');
+if (stockCtx) {
+    const colors = ['#e74c3c', '#f39c12', '#2ecc71', '#9b59b6', '#1abc9c'];
+    new Chart(stockCtx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: {{ stock_series|safe }}.map((s, i) => ({
+                label: s.name + ' (' + s.unite + ')',
+                data: s.data,
+                borderColor: colors[i % colors.length],
+                backgroundColor: colors[i % colors.length] + '20',
+                fill: false,
+                tension: 0.2,
+                pointRadius: 2
+            }))
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'top' } },
+            scales: { y: { beginAtZero: true, title: { display: true, text: 'Quantité' } } }
+        }
+    });
+}
+{% endif %}
+</script>
+</body></html>

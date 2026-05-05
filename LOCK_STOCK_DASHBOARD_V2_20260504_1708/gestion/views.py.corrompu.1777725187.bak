@@ -1,0 +1,73 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.db.models import Sum
+from .models import ProductionOeufs, CategorieStock, MouvementStock
+from .forms import ProductionOeufsForm, StockEntreeForm, StockSortieForm
+
+@login_required
+def dashboard(request):
+    total_oeufs = ProductionOeufs.objects.aggregate(Sum('nombre_oeufs'))['nombre_oeufs__sum'] or 0
+    return render(request, 'gestion/dashboard.html', {'total_oeufs': total_oeufs, 'title': '📊 Dashboard'})
+
+@login_required
+def stock_dashboard(request):
+    categories = CategorieStock.objects.all()
+    return render(request, 'gestion/stock_dashboard.html', {'categories': categories, 'title': '📦 Stock'})
+
+@login_required
+def stock_entree_add(request):
+    if request.method == 'POST':
+        form = StockEntreeForm(request.POST)
+        if form.is_valid():
+            mvt = form.save(commit=False)
+            mvt.type_mouvement = 'entree'
+            mvt.cree_par = request.user
+            mvt.save()
+            messages.success(request, "✅ Entrée enregistrée")
+            return redirect('stock_dashboard')
+    else:
+        form = StockEntreeForm()
+    return render(request, 'gestion/stock_form.html', {'form': form, 'title': '📥 Entrée', 'type': 'entree'})
+
+@login_required
+def stock_sortie_add(request):
+    if request.method == 'POST':
+        form = StockSortieForm(request.POST)
+        if form.is_valid():
+            mvt = form.save(commit=False)
+            mvt.type_mouvement = 'sortie'
+            mvt.cree_par = request.user
+            mvt.save()
+            messages.success(request, "✅ Sortie enregistrée")
+            return redirect('stock_dashboard')
+    else:
+        form = StockSortieForm()
+    return render(request, 'gestion/stock_form.html', {'form': form, 'title': '📤 Sortie', 'type': 'sortie'})
+
+@login_required
+def stock_categories(request):
+    if request.method == 'POST' and 'add_category' in request.POST:
+        nom = request.POST.get('nom')
+        if nom:
+            CategorieStock.objects.get_or_create(
+                nom=nom,
+                defaults={'unite_mesure': request.POST.get('unite_mesure', 'unités'), 'seuil_alerte': request.POST.get('seuil_alerte', 10)}
+            )
+            messages.success(request, f"✅ '{nom}' créée")
+            return redirect('stock_categories')
+    return render(request, 'gestion/stock_categories.html', {'categories': CategorieStock.objects.all(), 'title': '🗂️ Catégories'})
+
+@login_required
+def historique_graphique(request):
+    return render(request, 'gestion/historique_graphique.html', {'title': '📈 Historique'})
+
+@login_required
+def dg_dashboard(request):
+    if not (request.user.groups.filter(name='DG').exists() or request.user.is_superuser):
+        return redirect('dg_refuse')
+    return render(request, 'gestion/dg_dashboard.html', {'title': '🎯 Bilan DG'})
+
+@login_required
+def dg_refuse(request):
+    return render(request, 'gestion/dg_refuse.html', {'title': '⛔ Accès refusé'})

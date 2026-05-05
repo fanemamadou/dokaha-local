@@ -1,0 +1,170 @@
+{% extends 'gestion/base.html' %}
+{% block content %}
+<div class="container py-4" style="max-width: 650px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">🥚 Collecte Œufs</h2>
+        <a href="/stock/" class="btn btn-outline-secondary btn-sm">📦 Stock</a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-3 p-md-4">
+            {% if messages %}{% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-3">
+                {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>{% endfor %}{% endif %}
+
+            <form method="post" novalidate id="collecteForm">
+                {% csrf_token %}
+                <input type="hidden" name="mode_collecte" id="mode_collecte" value="plateaux">
+                
+                <!-- Toggle Mode -->
+                <div class="mb-4 p-3 bg-light rounded">
+                    <label class="form-label fw-semibold mb-2">Mode de collecte :</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="mode_toggle" id="mode_plateaux" value="plateaux" checked>
+                        <label class="btn btn-outline-primary" for="mode_plateaux">📦 Par Plateaux</label>
+                        <input type="radio" class="btn-check" name="mode_toggle" id="mode_vrac" value="vrac">
+                        <label class="btn btn-outline-primary" for="mode_vrac">🧺 En Vrac</label>
+                    </div>
+                </div>
+
+                <!-- Champs communs -->
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">{{ form.poulailler.label }}</label>
+                        {{ form.poulailler }}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">{{ form.date.label }}</label>
+                        {{ form.date }}
+                    </div>
+                </div>
+
+                <!-- MODE PLATEAUX -->
+                <div id="section_plateaux" class="mb-3">
+                    <div class="row g-3">
+                        <div class="col-7">
+                            <label class="form-label fw-semibold">{{ form.nb_plateaux.label }} *</label>
+                            {{ form.nb_plateaux }}
+                        </div>
+                        <div class="col-5">
+                            <label class="form-label fw-semibold">{{ form.reste_oeufs.label }}</label>
+                            {{ form.reste_oeufs }}
+                        </div>
+                    </div>
+                    <div class="form-text mt-1">
+                        🧮 <strong id="calc_plateaux">Total calculé : 0 œufs</strong>
+                    </div>
+                </div>
+
+                <!-- MODE VRAC -->
+                <div id="section_vrac" class="mb-3" style="display:none;">
+                    <label class="form-label fw-semibold">{{ form.total_oeufs_vrac.label }} *</label>
+                    {{ form.total_oeufs_vrac }}
+                    <div class="form-text mt-1">
+                        🧮 <strong id="calc_vrac">= 0 plateau(x) + 0 œuf(s) restant(s)</strong>
+                    </div>
+                </div>
+
+                <!-- Œufs défectueux -->
+                <div class="row g-2 mb-3">
+                    <div class="col-4"><label class="form-label small">{{ form.casses.label }}</label>{{ form.casses }}</div>
+                    <div class="col-4"><label class="form-label small">{{ form.petits.label }}</label>{{ form.petits }}</div>
+                    <div class="col-4"><label class="form-label small">{{ form.sales.label }}</label>{{ form.sales }}</div>
+                </div>
+
+                <!-- Commentaire -->
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">{{ form.commentaire.label }}</label>
+                    {{ form.commentaire }}
+                </div>
+
+                <!-- Champs cachés pour Django -->
+                {{ form.total_oeufs_calculé }}
+                {{ form.nombre_oeufs }}
+
+                <!-- Boutons -->
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save me-2"></i>Enregistrer
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-4 p-3 bg-light rounded small text-muted">
+                <strong>💡 Info :</strong> Le stock "Œufs" se met à jour automatiquement après validation.
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const modePlateaux = document.getElementById('mode_plateaux');
+    const modeVrac = document.getElementById('mode_vrac');
+    const sectionPlateaux = document.getElementById('section_plateaux');
+    const sectionVrac = document.getElementById('section_vrac');
+    const modeHidden = document.getElementById('mode_collecte');
+    
+    const inputPlateaux = document.getElementById('id_nb_plateaux');
+    const inputReste = document.getElementById('id_reste_oeufs');
+    const inputVrac = document.getElementById('id_total_oeufs_vrac');
+    const inputHidden = document.getElementById('id_nombre_oeufs_hidden');
+    const calcPlateaux = document.getElementById('calc_plateaux');
+    const calcVrac = document.getElementById('calc_vrac');
+    
+    // Toggle mode
+    function setMode(mode) {
+        modeHidden.value = mode;
+        if (mode === 'plateaux') {
+            sectionPlateaux.style.display = 'block';
+            sectionVrac.style.display = 'none';
+            inputPlateaux.required = true;
+            inputVrac.required = false;
+            calcFromPlateaux();
+        } else {
+            sectionPlateaux.style.display = 'none';
+            sectionVrac.style.display = 'block';
+            inputPlateaux.required = false;
+            inputVrac.required = true;
+            calcFromVrac();
+        }
+    }
+    
+    modePlateaux.addEventListener('change', () => setMode('plateaux'));
+    modeVrac.addEventListener('change', () => setMode('vrac'));
+    
+    // Calcul Mode Plateaux → Total
+    function calcFromPlateaux() {
+        const p = parseInt(inputPlateaux.value) || 0;
+        const r = parseInt(inputReste.value) || 0;
+        const total = (p * 30) + r;
+        inputHidden.value = total;
+        calcPlateaux.textContent = `Total calculé : ${total} œufs`;
+    }
+    
+    // Calcul Mode Vrac → Plateaux + Reste
+    function calcFromVrac() {
+        const total = parseInt(inputVrac.value) || 0;
+        const p = Math.floor(total / 30);
+        const r = total % 30;
+        inputHidden.value = total;
+        calcVrac.textContent = `= ${p} plateau(x) + ${r} œuf(s) restant(s)`;
+    }
+    
+    // Écouteurs
+    if (inputPlateaux) inputPlateaux.addEventListener('input', calcFromPlateaux);
+    if (inputReste) inputReste.addEventListener('input', calcFromPlateaux);
+    if (inputVrac) inputVrac.addEventListener('input', calcFromVrac);
+    
+    // Initialisation
+    setMode('plateaux');
+    
+    // Submit : s'assurer que le total est bien passé
+    document.getElementById('collecteForm').addEventListener('submit', function() {
+        if (modeHidden.value === 'plateaux') calcFromPlateaux();
+        else calcFromVrac();
+    });
+});
+</script>
+{% endblock %}

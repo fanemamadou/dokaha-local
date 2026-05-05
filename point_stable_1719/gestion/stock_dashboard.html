@@ -1,0 +1,44 @@
+{% extends 'gestion/base.html' %}
+{% block title %}📦 Stock - DOKAHA{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>📦 Gestion du Stock</h3>
+    <div class="btn-group">
+        <a href="{% url 'stock_entree' %}" class="btn btn-success">📥 Entrée</a>
+        <a href="{% url 'stock_sortie' %}" class="btn btn-danger">📤 Sortie</a>
+        <a href="{% url 'stock_categories' %}" class="btn btn-secondary">🗂️ Catégories</a>
+    </div>
+</div>
+
+{% if alertes %}
+<div class="alert alert-warning">
+    <strong>🚨 Alertes stock :</strong>
+    <ul class="mb-0">
+    {% for a in alertes %}
+        <li>{{ a.categorie.nom }} : {{ a.message }}</li>
+    {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="row g-3">
+{% for cat in categories %}
+<div class="col-md-4">
+    <div class="card shadow-sm h-100">
+        <div class="card-body">
+            <h5 class="card-title">{{ cat.nom }}</h5>
+            <p class="card-text fs-4 fw-bold">
+                {{ cat.stock_actuel|default:"0,0" }} {{ cat.unite_mesure }}
+            </p>
+            <small class="text-muted">Seuil d'alerte : {{ cat.seuil_alerte }}</small>
+            {% if cat.stock_actuel < cat.seuil_alerte %}
+            <span class="badge bg-danger ms-2">⚠️ Bas</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% empty %}
+<div class="col-12"><p class="text-muted">Aucune catégorie configurée.</p></div>
+{% endfor %}
+</div>
+{% endblock %}

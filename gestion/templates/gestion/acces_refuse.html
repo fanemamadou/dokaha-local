@@ -1,0 +1,20 @@
+{% extends 'gestion/base.html' %}
+{% block title %}🚫 Accès Refusé{% endblock %}
+{% block content %}
+<div class="container py-5 text-center">
+    <div class="card shadow-lg border-danger mx-auto" style="max-width: 500px;">
+        <div class="card-header bg-danger text-white py-3">
+            <h3 class="mb-0 fw-bold">🚫 Accès Refusé</h3>
+        </div>
+        <div class="card-body py-4">
+            <p class="lead text-muted mb-3">Vous n'avez pas les autorisations nécessaires pour accéder à cette page.</p>
+            <p class="small text-secondary">Contactez l'administrateur du système si vous pensez qu'il s'agit d'une erreur.</p>
+            <div class="mt-4 d-flex justify-content-center gap-3 flex-wrap">
+                <a href="/dashboard/" class="btn btn-outline-primary">📊 Retour au Dashboard</a>
+                <a href="/" class="btn btn-outline-secondary">🏠 Page d'Accueil</a>
+                <a href="mailto:admin@dokaha.ci" class="btn btn-outline-dark">📧 Contacter le Support</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

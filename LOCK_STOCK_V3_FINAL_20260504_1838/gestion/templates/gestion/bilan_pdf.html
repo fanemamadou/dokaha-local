@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Bilan Financier - Ferme DOKAHA</title>
+    <style>
+        body { font-family: DejaVu Sans, Arial, sans-serif; margin: 40px; color: #333; }
+        h1 { text-align: center; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; }
+        .periode { text-align: center; font-style: italic; margin: 20px 0; color: #7f8c8d; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #3498db; color: white; }
+        .total { font-weight: bold; font-size: 1.1em; }
+        .benefice { background-color: #2ecc71; color: white; padding: 15px; text-align: center; font-size: 1.3em; font-weight: bold; margin: 20px 0; border-radius: 5px; }
+        .benefice.negatif { background-color: #e74c3c; }
+        .footer { margin-top: 40px; text-align: center; font-size: 0.9em; color: #95a5a6; border-top: 1px solid #ddd; padding-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>🐔 Ferme DOKAHA - Bilan Financier</h1>
+    <p class="periode">Période : du {{ debut }} au {{ fin }}</p>
+
+    <table>
+        <tr><th>Poste</th><th>Montant (FCFA)</th></tr>
+        <tr><td>💰 Ventes d'œufs</td><td class="total">{{ total_ventes|floatformat:0 }}</td></tr>
+        <tr><td>📉 Dépenses (aliments, salaires, etc.)</td><td>{{ total_depenses|floatformat:0 }}</td></tr>
+        <tr><td>💊 Santé / Vétérinaire</td><td>{{ total_sante|floatformat:0 }}</td></tr>
+        <tr class="total"><td>Total charges</td><td>{{ total_charges|floatformat:0 }}</td></tr>
+    </table>
+
+    <div class="benefice {% if benefice < 0 %}negatif{% endif %}">
+        🎯 BÉNÉFICE NET : {{ benefice|floatformat:0 }} FCFA
+    </div>
+
+    <table>
+        <tr><th>Production</th><th>Détail</th></tr>
+        <tr><td>🥚 Œufs collectés</td><td>{{ total_oeufs }}</td></tr>
+        <tr><td>📦 Plateaux de 30</td><td>{{ plateaux_oeufs }}</td></tr>
+        <tr><td>🔢 Œufs restants</td><td>{{ reste_oeufs }}</td></tr>
+    </table>
+
+    <p class="footer">
+        Généré le {% now "d/m/Y à H:i" %} • Ferme DOKAHA • Gestion de pondeuses
+    </p>
+</body>
+</html>

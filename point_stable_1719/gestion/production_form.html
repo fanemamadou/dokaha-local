@@ -1,0 +1,62 @@
+{% extends "gestion/base.html" %}
+{% block title %}Nouvelle Collecte{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <div class="card">
+        <div class="card-header bg-success text-white">🥚 Nouvelle Collecte</div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="mb-3"><label class="fw-bold">📅 Date</label>{{ form.date }}</div>
+                <div class="mb-3"><label class="fw-bold">🏠 Poulailler</label>{{ form.poulailler }}</div>
+                <div class="mb-3">
+                    <label class="fw-bold">🥚 Total œufs</label>
+                    {{ form.nombre_oeufs }}
+                    <!-- ✅ PREVIEW SPAN avec ID fixe -->
+                    <div class="form-text">Conversion : <span id="pv" style="font-weight:500;">--</span></div>
+                </div>
+                <div class="mb-3"><label class="fw-bold">💔 Œufs cassés</label>{{ form.oeufs_casses }}</div>
+                <button type="submit" class="btn btn-success w-100 py-3">Valider la Collecte</button>
+            
+<!-- 🧮 CALCUL TEMPS RÉEL ŒUFS → PLATEAUX -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const eggsInput = document.getElementById('id_nombre_oeufs') || document.querySelector('input[name="nombre_oeufs"]');
+    if (!eggsInput) return;
+    
+    // Créer l'affichage résultat s'il n'existe pas
+    let resultDiv = document.getElementById('realtime-calc');
+    if (!resultDiv) {
+        resultDiv = document.createElement('div');
+        resultDiv.id = 'realtime-calc';
+        resultDiv.className = 'alert alert-info mt-3 py-2 small';
+        resultDiv.innerHTML = '📊 <strong>Conversion :</strong> <span id="calc-output">0 œufs = 0 plt + 0 œuf</span>';
+        eggsInput.closest('form')?.querySelector('button[type="submit"]')?.before(resultDiv);
+    }
+    
+    function updateCalc() {
+        const val = parseInt(eggsInput.value) || 0;
+        const plt = Math.floor(val / 30);
+        const rst = val % 30;
+        const txt = `${val} œufs = ${plt} plt + ${rst} œuf${rst>1?'s':''}`;
+        document.getElementById('calc-output').textContent = txt;
+        resultDiv.classList.add('show');
+    }
+    
+    eggsInput.addEventListener('input', updateCalc);
+    eggsInput.addEventListener('blur', updateCalc);
+    if (eggsInput.value) updateCalc();
+    
+    console.log('✅ Calcul temps réel activé');
+});
+</script>
+
+</form>
+    <div class="mt-3 text-center">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">← Retour au Dashboard</a>
+    </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

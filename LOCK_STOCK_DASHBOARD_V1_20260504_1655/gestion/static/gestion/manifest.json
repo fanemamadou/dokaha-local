@@ -1,0 +1,13 @@
+{
+  "name": "DOKAHA - Gestion Avicole",
+  "short_name": "DOKAHA",
+  "description": "Suivi de production, ventes et cheptel pour votre ferme",
+  "start_url": "/dashboard/",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#2e7d32",
+  "icons": [
+    {"src": "/static/gestion/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "/static/gestion/icon-512.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}

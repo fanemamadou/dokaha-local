@@ -1,0 +1,62 @@
+{% extends "gestion/base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="container py-4">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h3 class="fw-bold mb-0">📊 Pilotage <span class="text-muted fs-6">({{ today|date:"d/m/Y" }})</span></h3>
+        <div class="dropdown">
+            <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown">📤 Exporter Excel</button>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="{% url 'export_excel' %}">📦 Export Complet (.xlsx)</a></li>
+                {% if user.is_staff %}
+                <li><a class="dropdown-item" href="{% url 'export_bilan' %}">📊 Export Bilan (.xlsx)</a></li>
+                <li><a class="dropdown-item" href="{% url 'export_credits' %}">💳 Export Crédits (.xlsx)</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+
+    <!-- 🚨 Alertes -->
+    {% if alert_effectif or alerts %}
+    <div class="alert {% if alerts %}alert-danger{% else %}alert-warning{% endif %} shadow-sm mb-3">
+        {% if alerts %}<ul class="mb-0 ps-3">{% for msg in alerts %}<li>{{ msg }}</li>{% endfor %}</ul>{% endif %}
+        {% if alert_effectif %}<p class="mb-0 mt-2">Va dans <a href="/admin/gestion/poulailler/" class="alert-link fw-bold">Admin → Poulaillers</a> et renseigne <strong>"Effectif initial"</strong></p>{% endif %}
+    </div>
+    {% endif %}
+
+    <!-- 💳 Alertes crédits -->
+    {% if total_credits > 0 %}
+    <div class="alert alert-warning d-flex justify-content-between align-items-center shadow-sm mb-4">
+        <span>💳 <strong>Crédits en cours :</strong> {{ total_credits|floatformat:0 }} FCFA</span>
+        <a href="{% url 'credits' %}" class="btn btn-sm btn-dark">Voir le détail →</a>
+    </div>
+    {% endif %}
+
+    <!-- 🃏 KPI -->
+    <div class="row g-3 mb-4">
+        <div class="col-6"><div class="card bg-primary text-white text-center p-3 h-100"><h2 class="mb-0 fw-bold">{{ stock_oeufs }}</h2><small>📦 Stock Œufs</small></div></div>
+        <div class="col-6"><div class="card bg-info text-white text-center p-3 h-100"><h2 class="mb-0 fw-bold">{{ poules_actives }}</h2><small>🐔 Actives</small></div></div>
+        <div class="col-6"><div class="card {% if taux_ponte < 50 %}bg-danger{% elif taux_ponte < 70 %}bg-warning{% else %}bg-success{% endif %} text-white text-center p-3 h-100"><h2 class="mb-0 fw-bold">{{ taux_ponte }}%</h2><small>📈 Ponte (7j)</small></div></div>
+        <div class="col-6"><div class="card bg-success text-white text-center p-3 h-100"><h2 class="mb-0 fw-bold">{{ total_ferme }}</h2><small>🌍 Total Ferme</small></div></div>
+    </div>
+
+    <!-- 🏭 Tableau Cheptel -->
+    <div class="card mb-4 shadow-sm"><div class="card-header bg-white fw-bold">🏭 État du cheptel</div><div class="table-responsive">
+        <table class="table table-striped table-hover mb-0 text-center align-middle">
+            <thead class="table-dark"><tr><th>Bâtiment</th><th>Initial</th><th>🪦 Mort.</th><th>💰 Vendus</th><th>✅ Reste</th></tr></thead>
+            <tbody>{% for b in stats_batiments %}<tr><td>{{ b.nom }}</td><td>{{ b.init }}</td><td class="text-danger">{{ b.mort }}</td><td class="text-warning">{{ b.vend }}</td><td class="fw-bold text-success">{{ b.reste }}</td></tr>{% empty %}<tr><td colspan="5" class="text-muted">Aucun bâtiment</td></tr>{% endfor %}</tbody>
+        </table></div></div>
+
+    <!-- ⚡ Actions (✅ CORRECTION : vente_oeufs au lieu de vente_choice) -->
+    <div class="row g-3 mb-4">
+        <div class="col-6"><a href="{% url 'production_add' %}" class="btn btn-outline-primary w-100 py-3 fw-bold">+ Collecte</a></div>
+        <div class="col-6"><a href="{% url 'vente_choice' %}" class="btn btn-outline-success w-100 py-3 fw-bold">+ Vente</a></div>
+        <div class="col-6"><a href="{% url 'sortie_poules_add' %}" class="btn btn-outline-danger w-100 py-3 fw-bold">🪦 Mortalité</a></div>
+        <div class="col-6"><a href="{% url 'depense_add' %}" class="btn btn-outline-secondary w-100 py-3 fw-bold">💰 Dépense</a></div>
+    </div>
+
+    <!-- 📋 Historique -->
+    <div class="card shadow-sm"><div class="card-header bg-white fw-bold">📋 Dernières collectes</div><ul class="list-group list-group-flush">{% for p in productions %}<li class="list-group-item d-flex justify-content-between"><span class="fw-bold text-primary">{{ p.date|date:"d/m" }}</span> <span class="badge bg-success">{{ p.nombre_oeufs }} œufs</span></li>{% empty %}<li class="text-muted py-3 text-center">Rien</li>{% endfor %}</ul></div>
+</div>
+{% endblock %}

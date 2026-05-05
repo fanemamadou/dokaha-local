@@ -1,0 +1,69 @@
+{% extends 'gestion/base.html' %}
+{% block content %}
+<div class="container py-4" style="max-width: 850px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">📝 Nouveau Mouvement Stock</h2>
+        <a href="/stock/" class="btn btn-outline-secondary btn-sm">
+            <i class="fas fa-arrow-left me-1"></i> Retour au Dashboard
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show mb-4">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">{{ form.categorie.label }}</label>
+                        {{ form.categorie }}
+                        {% if form.categorie.errors %}<div class="text-danger small mt-1">{{ form.categorie.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">{{ form.type_mouvement.label }}</label>
+                        {{ form.type_mouvement }}
+                        {% if form.type_mouvement.errors %}<div class="text-danger small mt-1">{{ form.type_mouvement.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="row g-3 mt-1">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">{{ form.quantite.label }}</label>
+                        {{ form.quantite }}
+                        {% if form.quantite.errors %}<div class="text-danger small mt-1">{{ form.quantite.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">{{ form.commentaire.label }}</label>
+                        {{ form.commentaire }}
+                        {% if form.commentaire.errors %}<div class="text-danger small mt-1">{{ form.commentaire.errors.0 }}</div>{% endif %}
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="fas fa-save me-2"></i>Enregistrer le Mouvement
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-4 p-3 bg-light rounded small text-muted">
+                <strong>💡 Rappel :</strong>
+                <ul class="mb-0 mt-2 ps-3">
+                    <li><strong>Entrée</strong> → Augmente le stock (réception, production)</li>
+                    <li><strong>Sortie</strong> → Diminue le stock (vente, consommation, perte)</li>
+                    <li><strong>Ajustement/Perte</strong> → Corrige les écarts d'inventaire</li>
+                    <li>Le dashboard recalculera automatiquement les stocks après validation.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
