@@ -1,5 +1,5 @@
 from django import forms
-from .models import CategorieStock, MouvementStock, ProductionOeufs
+from .models import Poulailler, CategorieStock, MouvementStock, ProductionOeufs
 
 # 📦 Formulaire Mouvement Stock (version stable)
 class StockMouvementForm(forms.ModelForm):
@@ -47,3 +47,10 @@ class ProductionOeufsForm(forms.ModelForm):
         from django.utils import timezone
         if not self.initial.get('date'):
             self.initial['date'] = timezone.now().date()
+
+
+class MortaliteForm(forms.Form):
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}))
+    poulailler = forms.ModelChoiceField(queryset=Poulailler.objects.all(), widget=forms.Select(attrs={'class': 'form-select'}))
+    nombre = forms.IntegerField(min_value=1, widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    commentaire = forms.CharField(required=False, widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 2}))

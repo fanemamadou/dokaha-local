@@ -162,3 +162,36 @@ def collecte_oeufs(request):
         'form': form, 'title': '🥚 Collecte Œufs', 'user': request.user
     })
 
+
+
+@login_required
+def mortalite_form(request):
+    from .forms import MortaliteForm
+    from .models import Poulailler, SortiePoules
+    from django.db.models import Sum
+    from django.utils import timezone
+    from django.contrib import messages
+
+    # Préparer les données du tableau
+    poulaillers_data = []
+    for p in Poulailler.objects.all():
+        m = SortiePoules.objects.filter(poulailler=p, type_sortie='mortalite').aggregate(t=Sum('nombre'))['t'] or 0
+        poulaillers_data.append({'nom': p.nom, 'initial': p.effectif_initial, 'mortalites': m, 'reste': p.effectif_initial - m})
+
+    if request.method == 'POST':
+        form = MortaliteForm(request.POST)
+        if form.is_valid():
+            p = form.cleaned_data['poulailler']
+            n = form.cleaned_data['nombre']
+            if n <= p.effectif_initial:
+                p.effectif_initial -= n
+                p.save()
+                SortiePoules.objects.create(date=form.cleaned_data['date'], poulailler=p, nombre=n, type_sortie='mortalite')
+                messages.success(request, f"✅ {n} poules déduites de '{p.nom}'")
+                return redirect('mortalite_form')
+            else:
+                messages.error(request, f"⚠️ Effectif insuffisant ({p.effectif_initial} < {n})")
+    else:
+        form = MortaliteForm(initial={'date': timezone.now().date()})
+
+    return render(request, 'gestion/mortalite_form.html', {'form': form, 'poulaillers': poulaillers_data})
