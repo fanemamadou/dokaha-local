@@ -1,23 +1,59 @@
 {% extends "gestion/base.html" %}
 {% block content %}
-<div class="alert alert-success fw-bold">✅ DASHBOARD RENDU AVEC SUCCÈS</div>
-<div class="row mt-4">
-    <div class="col-md-6">
-        <div class="card p-4 bg-white shadow">
-            <h5>🐔 Cheptel Total</h5>
-            <h2 class="text-primary">{{ total_cheptel|default:0 }} sujets</h2>
+<div class="container-fluid px-4 mt-4">
+    <h2 class="mb-4 fw-bold text-primary">🏠 Tableau de Bord Principal</h2>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-start border-4 border-primary shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-1">Cheptel Total</h6>
+                    <h3 class="fw-bold mb-0">{{ total_cheptel }} 🐔</h3>
+                    <small class="text-success">Poules actives</small>
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card p-4 bg-white shadow">
-            <h5>💰 Trésorerie</h5>
-            <h2 class="text-success">{{ tresorerie|default:0|floatformat:0 }} FCFA</h2>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-start border-4 {% if mortalite_today > 0 %}border-danger{% else %}border-success{% endif %} shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-1">Mortalité Aujourd'hui</h6>
+                    <h3 class="fw-bold mb-0">{{ mortalite_today }}</h3>
+                    <small class="{% if mortalite_week > 0 %}text-danger{% else %}text-muted{% endif %}">{{ mortalite_week }} sur 7 jours</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-start border-4 {% if alerte_tresorerie %}border-warning{% else %}border-success{% endif %} shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-1">Trésorerie</h6>
+                    <h3 class="fw-bold mb-0">{{ tresorerie|floatformat:0 }} F</h3>
+                    <small class="text-muted">Recettes - Dépenses</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+            <div class="card border-start border-4 {% if alerte_mortalite %}border-warning{% else %}border-info{% endif %} shadow-sm h-100">
+                <div class="card-body">
+                    <h6 class="text-muted text-uppercase mb-1">État Santé</h6>
+                    <h3 class="fw-bold mb-0">{% if alerte_mortalite %}⚠️ Alerte{% else %}✅ Stable{% endif %}</h3>
+                    <small class="text-muted">Seuil 2% / 7j</small>
+                </div>
+            </div>
         </div>
     </div>
 </div>
-<div class="mt-4">
-    <a href="/mortalite/ajouter/" class="btn btn-danger me-2">💀 Mortalité</a>
-    <a href="/vente/oeufs/" class="btn btn-warning me-2">🥚 Vente Œufs</a>
-    <a href="/credits/" class="btn btn-dark">🔔 Crédits</a>
-</div>
+
+    <!-- ⚡ ACTIONS RAPIDES -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white fw-bold">⚡ Actions Rapides</div>
+        <div class="card-body">
+            <div class="row g-2">
+                <div class="col-md-3 col-6"><a href="/mortalite/ajouter/" class="btn btn-outline-danger w-100 py-2">💀 Mortalité</a></div>
+                <div class="col-md-3 col-6"><a href="/collecte/" class="btn btn-outline-warning w-100 py-2">🥚 Collecte Œufs</a></div>
+                <div class="col-md-3 col-6"><a href="/vente/oeufs/" class="btn btn-outline-success w-100 py-2">💰 Vente Œufs</a></div>
+                <div class="col-md-3 col-6"><a href="/credits/" class="btn btn-outline-info w-100 py-2">🔔 Crédits</a></div>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}

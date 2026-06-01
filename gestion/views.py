@@ -211,3 +211,41 @@ def mortalite_form(request):
         form = MortaliteForm(initial={'date': timezone.now().date()})
 
     return render(request, 'gestion/mortalite_form.html', {'form': form, 'poulaillers': poulaillers_data})
+
+
+@login_required
+def dashboard(request):
+    """Dashboard: KPIs + Actions (Étapes 1 & 2)"""
+    from .models import Poulailler, Vente, Depense, SortiePoules
+    from django.db.models import Sum
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.shortcuts import render
+
+    today = timezone.now().date()
+    week_ago = today - timedelta(days=7)
+
+    total_cheptel = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
+    mortalite_today = SortiePoules.objects.filter(date=today, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+    mortalite_week = SortiePoules.objects.filter(date__gte=week_ago, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+
+    try:
+        total_recettes = Vente.objects.aggregate(total=Sum('montant_total'))['total'] or 0
+        total_depenses = Depense.objects.aggregate(total=Sum('montant'))['total'] or 0
+    except:
+        total_recettes = 0
+        try: total_depenses = Depense.objects.aggregate(total=Sum('montant_total'))['total'] or 0
+        except: total_depenses = 0
+
+    tresorerie = total_recettes - total_depenses
+    alerte_mortalite = mortalite_week > (total_cheptel * 0.02) if total_cheptel > 0 else False
+    alerte_tresorerie = tresorerie < 0
+
+    return render(request, 'gestion/dashboard.html', {
+        'total_cheptel': total_cheptel,
+        'mortalite_today': mortalite_today,
+        'mortalite_week': mortalite_week,
+        'tresorerie': tresorerie,
+        'alerte_mortalite': alerte_mortalite,
+        'alerte_tresorerie': alerte_tresorerie,
+    })
