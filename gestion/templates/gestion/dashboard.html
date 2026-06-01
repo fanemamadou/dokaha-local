@@ -1,131 +1,23 @@
-{% extends 'gestion/base.html' %}
+{% extends "gestion/base.html" %}
 {% block content %}
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard DOKAHA</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-<!-- 🧭 MENU PRINCIPAL DOKAHA -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-3 shadow-sm">
-    <div class="container">
-        <a class="navbar-brand fw-bold" href="/dashboard/">🐔 DOKAHA</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#dokahaNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="dokahaNav">
-            <ul class="navbar-nav me-auto">
-                <li class="nav-item"><a class="nav-link {% if 'dashboard' in request.path %}active{% endif %}" href="/dashboard/">📊 Pilotage</a></li>
-                <li class="nav-item"><a class="nav-link {% if 'stock' in request.path %}active{% endif %}" href="/stock/">📦 Stock</a></li>
-                <li class="nav-item"><a class="nav-link" href="/admin/">⚙️ Admin</a></li>
-            
-{% if user.is_authenticated %}
-  {% for g in user.groups.all %}
-    {% if g.name == 'DG' %}
-      <li class="nav-item">
-        <a class="nav-link text-danger fw-bold" href="/dg/">🎯 Bilan DG</a>
-      </li>
-    {% endif %}
-  {% endfor %}
-{% endif %}
-
-            </ul>
-            <span class="navbar-text text-light opacity-75 small d-none d-md-inline">📅 {% now "d/m/Y" %} | {% if user.is_authenticated %}👤 {{ user.get_username }}{% endif %}</span>
+<div class="alert alert-success fw-bold">✅ DASHBOARD RENDU AVEC SUCCÈS</div>
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card p-4 bg-white shadow">
+            <h5>🐔 Cheptel Total</h5>
+            <h2 class="text-primary">{{ total_cheptel|default:0 }} sujets</h2>
         </div>
     </div>
-</nav>
-
-<!-- MARKER_V16 -->
-<!-- 🔥 DEBUG v3.1 | SERVEUR RECHARGÉ -->
-
-
-<div class="container py-3">
-    <h3 class="mb-4">📊 Pilotage <span class="text-muted fs-6">({{ today|date:"d/m/Y" }})</span></h3>
-
-    <!-- DEBUG BANNER -->
-    <div class="alert alert-info py-2 mb-3 small">
-        ✅ Chargé | 🐔
-    <!-- 📊 KPI CARDS -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3"><div class="card bg-primary text-white p-3 text-center h-100">
-            <h2 class="mb-0">{{ stock_plateaux|default:0 }} <small class="fs-6">plt</small></h2>
-            <small>📦 Stock ({{ stock_unites|default:0 }} œufs)</small></div></div>
-        <div class="col-6 col-md-3"><div class="card bg-info text-white p-3 text-center h-100">
-            <h2 class="mb-0">{{ poules_actives|default:0 }}</h2>
-            <small>🐔 Poules Actives</small></div></div>
-        <div class="col-6 col-md-3"><div class="card bg-warning text-dark p-3 text-center h-100">
-            <h2 class="mb-0">{{ taux_ponte|default:0 }}%</h2>
-            <small>📈 Taux Ponte (7j)</small></div></div>
-        <div class="col-6 col-md-3"><div class="card bg-success text-white p-3 text-center h-100">
-            <h2 class="mb-0">{{ ventes_mois|default:0 }}</h2>
-            <small>💰 Ventes Mois (FCFA)</small></div></div>
-    </div>
-
-    <!-- BOUTONS (chemins directs) -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-md-3"><a href="/production/add/" class="btn btn-outline-primary w-100 py-3 fw-bold">+ Collecte</a></div>
-        <div class="col-6 col-md-3"><a href="/vente/" class="btn btn-outline-success w-100 py-3 fw-bold">+ Vente Œufs</a></div>
-        <div class="col-6 col-md-3"><a href="/sortie-poules/" class="btn btn-outline-secondary w-100 py-3 fw-bold">🪦 Mortalité</a></div>
-        <div class="col-6 col-md-3"><a href="/bilan/" class="btn btn-outline-dark w-100 py-3 fw-bold">📈 Bilan</a></div>
-    </div>
-
-        <!-- CHEPTEL DYNAMIQUE -->
-    <div class="card mb-4 shadow-sm"><div class="card-header bg-white fw-bold">🐔 État du cheptel (Temps réel)</div>
-        <div class="table-responsive"><table class="table table-sm table-hover mb-0 text-center align-middle">
-            <thead class="table-dark"><tr><th>Bâtiment</th><th>Effectif</th><th>Œufs (30j)</th><th>Taux ponte</th></tr></thead>
-            <tbody>
-                {% for b in cheptel_data %}
-                <tr>
-                    <td class="fw-bold">{{ b.nom }}</td>
-                    <td>{{ b.effectif }} p.</td>
-                    <td>{{ b.eggs_30|default:0 }}</td>
-                    <td><span class="badge bg-{% if b.taux_ponte >= 80 %}success{% elif b.taux_ponte >= 60 %}warning{% else %}danger{% endif %}">{{ b.taux_ponte|default:0 }}%</span></td>
-                </tr>
-                {% empty %}
-                <tr><td colspan="4" class="text-muted py-3">⚠️ Saisis un mouvement dans l'admin pour activer les calculs.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table></div>
-    </div>
-
-    <!-- GRAPHIQUE -->
-    <div class="card mb-4 shadow-sm"><div class="card-header bg-white fw-bold">📈 Production (7 derniers jours)</div>
-        <div class="card-body" style="height:250px"><canvas id="chart7j"></canvas></div>
-    </div>
-
-    <!-- HISTORIQUE -->
-    <div class="card shadow-sm"><div class="card-header bg-white fw-bold">📋 Dernières collectes</div>
-        <ul class="list-group list-group-flush">
-            {% for p in productions %}
-            <li class="list-group-item d-flex justify-content-between"><span class="fw-bold text-primary">{{ p.date|date:"d/m" }} • {{ p.poulailler.nom }}</span><span class="badge bg-success">{{ p.nombre_oeufs }} œufs</span></li>
-            {% empty %}<li class="list-group-item text-center text-muted py-3">Aucune donnée</li>{% endfor %}
-        </ul>
+    <div class="col-md-6">
+        <div class="card p-4 bg-white shadow">
+            <h5>💰 Trésorerie</h5>
+            <h2 class="text-success">{{ tresorerie|default:0|floatformat:0 }} FCFA</h2>
+        </div>
     </div>
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('chart7j');
-    if (ctx && {{ chart_labels|length }} > 0) {
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: {{ chart_labels|safe }},
-                datasets: [{
-                    label: 'Plateaux',
-                    data: {{ chart_data|safe }},
-                    borderColor: '#3498db',
-                    backgroundColor: 'rgba(52,152,219,0.15)',
-                    fill: true, tension: 0.3
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
-        });
-    }
-});
-</script>
-</body></html>
+<div class="mt-4">
+    <a href="/mortalite/ajouter/" class="btn btn-danger me-2">💀 Mortalité</a>
+    <a href="/vente/oeufs/" class="btn btn-warning me-2">🥚 Vente Œufs</a>
+    <a href="/credits/" class="btn btn-dark">🔔 Crédits</a>
+</div>
 {% endblock %}

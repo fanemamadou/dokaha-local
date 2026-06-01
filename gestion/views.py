@@ -19,9 +19,25 @@ def stock_historique(request):
 # =============================================================================
 # 🎯 AUTRES VUES (placeholders si absentes)
 # =============================================================================
+
 @login_required
 def dashboard(request):
-    return render(request, 'gestion/base.html', {'title': 'Dashboard', 'user': request.user})
+    """Dashboard principal garanti fonctionnel"""
+    from .models import Poulailler, Vente, Depense
+    from django.db.models import Sum
+    
+    total_cheptel = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
+    try:
+        recettes = Vente.objects.aggregate(total=Sum('montant_total'))['total'] or 0
+        depenses = Depense.objects.aggregate(total=Sum('montant'))['total'] or 0
+    except:
+        recettes = depenses = 0
+        
+    return render(request, 'gestion/dashboard.html', {
+        'total_cheptel': total_cheptel,
+        'tresorerie': recettes - depenses,
+    })
+
 
 @login_required
 def dg_dashboard(request):
