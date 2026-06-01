@@ -81,9 +81,68 @@ def vente_list(request):
 def vente_choice(request):
     return render(request, 'gestion/vente_choice.html', {'title': 'Type de vente', 'user': request.user})
 
+
 @login_required
 def vente_form(request, type_vente):
-    return render(request, 'gestion/vente_form.html', {'type_vente': type_vente, 'title': f'Vente {type_vente}', 'user': request.user})
+    """Formulaire vente unifié : oeufs/poulets/autres + déduction sécurisée"""
+    from .models import Vente, Poulailler
+    from django.contrib import messages
+    from django.utils import timezone
+    from django.shortcuts import redirect
+    from django.db import transaction
+
+    poulaillers = Poulailler.objects.all()
+
+    if request.method == 'POST':
+        client = request.POST.get('client', '').strip()
+        unites = float(request.POST.get('unites', 0) or 0)
+        prix = float(request.POST.get('prix', 0) or 0)
+        montant_paye = float(request.POST.get('montant_paye', 0) or 0)
+        mode_paiement = request.POST.get('mode_paiement', 'espece')
+        poulailler_id = request.POST.get('poulailler_id')
+        designation = request.POST.get('designation', '').strip()
+
+        if not client or unites <= 0 or prix <= 0:
+            messages.error(request, "❌ Client, quantité et prix obligatoires.")
+        elif type_vente == 'autres' and not designation:
+            messages.error(request, "❌ Désignation obligatoire pour ce type.")
+        else:
+            try:
+                with transaction.atomic():
+                    montant_total = unites * prix
+                    montant_restant = max(0, montant_total - montant_paye)
+                    paye = montant_restant == 0
+                    msg = ""
+
+                    # 🐔 Déduction poulailler pour poulets
+                    if type_vente == 'poulets' and poulailler_id:
+                        p = Poulailler.objects.select_for_update().get(id=poulailler_id)
+                        if p.effectif_initial < unites:
+                            raise ValueError(f"⚠️ Effectif insuffisant dans {p.nom} ({p.effectif_initial} dispo)")
+                        p.effectif_initial -= int(unites)
+                        p.save()
+                        msg = f"🐔 Déduit de {p.nom} | "
+
+                    Vente.objects.create(
+                        date=timezone.now().date(), client=client, type_vente=type_vente,
+                        unites=unites, prix_plateau=prix, montant_total=montant_total,
+                        montant_paye=montant_paye, montant_restant=montant_restant,
+                        paye=paye, mode_paiement=mode_paiement,
+                        poulailler_id=poulailler_id if type_vente == 'poulets' else None
+                    )
+                    messages.success(request, f"✅ Vente validée ! {msg}Total: {montant_total:,.0f} FCFA")
+                    return redirect('dashboard')
+            except Poulailler.DoesNotExist:
+                messages.error(request, "❌ Poulailler introuvable.")
+            except ValueError as e:
+                messages.error(request, str(e))
+            except Exception as e:
+                messages.error(request, f"❌ Erreur: {e}")
+
+    return render(request, 'gestion/vente_form.html', {
+        'type_vente': type_vente, 'poulaillers': poulaillers, 'now': timezone.now()
+    })
+
 
 @login_required
 def acces_refuse(request):

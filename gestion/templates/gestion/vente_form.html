@@ -1,79 +1,58 @@
-{% extends 'gestion/base.html' %}
+{% extends "gestion/base.html" %}
 {% block content %}
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="mb-0">📝 Vente de {{ type_vente|capfirst|default:"Œufs" }}</h3>
-        <span class="badge bg-{% if type_vente == 'poulets' %}danger{% elif type_vente == 'autres' %}info{% else %}warning{% endif %} fs-6">{{ type_vente|capfirst|default:"Œufs" }}</span>
+<div class="container mt-4" style="max-width:800px">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0 fw-bold">💰 Nouvelle Vente : {{ type_vente|upper }}</h4>
+            <span class="badge bg-light text-primary fs-6" id="recuBadge">N° Reçu : ---</span>
+        </div>
+        <div class="card-body p-4">
+            <form method="POST" action="" id="venteForm">{% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-md-6"><label class="form-label fw-bold">👤 Client *</label><input type="text" name="client" class="form-control" required></div>
+                    <div class="col-md-6"><label class="form-label fw-bold">📄 N° Reçu</label><input type="text" name="ref_recu" class="form-control bg-light" id="refInput" readonly></div>
+                    <div class="col-md-6"><label class="form-label fw-bold">🔢 {% if type_vente == 'oeufs' %}Plateaux{% elif type_vente == 'poulets' %}Poulets (sujets){% else %}Unités{% endif %} *</label><input type="number" name="unites" id="unites" class="form-control form-control-lg" min="1" required></div>
+                    <div class="col-md-6"><label class="form-label fw-bold">💵 Prix unitaire (FCFA) *</label><input type="number" name="prix" id="prix" class="form-control form-control-lg" min="0" required></div>
+
+                    {% if type_vente == 'poulets' %}
+                    <div class="col-12"><label class="form-label fw-bold">🏠 Poulailler d'origine *</label><select name="poulailler_id" class="form-select" required><option value="">-- Choisir --</option>{% for p in poulaillers %}<option value="{{ p.id }}">{{ p.nom }} ({{ p.effectif_initial }})</option>{% endfor %}</select></div>
+                    {% endif %}
+
+                    {% if type_vente == 'autres' %}
+                    <div class="col-12"><label class="form-label fw-bold">📦 Désignation *</label><input type="text" name="designation" class="form-control" required placeholder="Ex: Sac aliment, Paille..."></div>
+                    {% endif %}
+
+                    <div class="col-12"><div class="row g-2 p-3 bg-light rounded border">
+                        <div class="col-md-4 text-center"><small>Montant Total</small><div class="fs-4 fw-bold text-primary" id="totalDisplay">0 FCFA</div><input type="hidden" name="montant_total" id="totalHidden"></div>
+                        <div class="col-md-4 text-center"><small>Montant Versé</small><input type="number" name="montant_paye" id="paye" class="form-control text-center fw-bold" min="0" value="0"></div>
+                        <div class="col-md-4 text-center"><small>Reste à Payer</small><div class="fs-4 fw-bold text-danger" id="resteDisplay">0 FCFA</div><input type="hidden" name="montant_restant" id="resteHidden"></div>
+                    </div></div>
+
+                    <div class="col-md-6"><label class="form-label fw-bold">💳 Mode Paiement</label><select name="mode_paiement" class="form-select"><option value="espece">Espèces</option><option value="mobile">Mobile Money</option><option value="cheque">Chèque</option><option value="credit">Crédit</option></select></div>
+                </div>
+                {% if messages %}{% for m in messages %}<div class="alert alert-{{ m.tags }} mt-3">{{ m }}</div>{% endfor %}{% endif %}
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-success btn-lg fw-bold shadow">💾 VALIDER</button>
+                    <a href="/dashboard/" class="btn btn-outline-secondary">↩️ Annuler</a>
+                </div>
+            </form>
+        </div>
     </div>
-
-    <form method="POST" class="card p-4 shadow-sm">
-        {% csrf_token %}
-        <input type="hidden" name="type_vente" value="{{ type_vente }}">
-        
-        <!-- 📦 Informations de base -->
-        <div class="row g-3">
-            <div class="col-md-6">
-                <label class="form-label fw-bold">👤 Client</label>
-                <input type="text" name="client" class="form-control" placeholder="Nom ou 'Comptoir'" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold">📦 Quantité</label>
-                <input type="number" name="plateaux" id="quantite" class="form-control" min="1" required>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label fw-bold">💰 Prix unitaire (F)</label>
-                <input type="number" name="prix_plateau" id="prix_unitaire" class="form-control" min="0" required>
-            </div>
-        </div>
-
-        <!-- 💳 Bloc Paiement Comptable -->
-        <div class="mt-4 p-3 bg-light rounded border">
-            <label class="form-label fw-bold mb-3">💳 Détail du paiement</label>
-            <div class="row g-3 align-items-end">
-                <div class="col-md-4">
-                    <label class="form-label small text-muted">💰 Montant Total</label>
-                    <input type="number" id="montant_total" class="form-control fw-bold bg-white" readonly>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small fw-bold">💵 Montant Payé</label>
-                    <input type="number" name="montant_paye" id="montant_paye" class="form-control" min="0" value="0" required>
-                </div>
-                <div class="col-md-4">
-                    <label class="form-label small text-muted">⏳ Reste à payer</label>
-                    <input type="number" id="montant_restant" class="form-control fw-bold bg-white" readonly>
-                </div>
-            </div>
-            <small class="text-muted mt-2 d-block"><i class="fas fa-info-circle me-1"></i>Le reste est calculé automatiquement. Saisir 0 F si paiement intégral.</small>
-        </div>
-
-        <div class="mt-4 d-flex gap-2 align-items-center">
-            <button type="submit" class="btn btn-success"><i class="fas fa-save me-2"></i>Valider la vente</button>
-            <a href="/vente/add/" class="btn btn-outline-secondary">Annuler</a>
-        </div>
-    </form>
 </div>
-
 <script>
-function calculerPaiement() {
-    const qte = parseFloat(document.getElementById('quantite').value) || 0;
-    const prix = parseFloat(document.getElementById('prix_unitaire').value) || 0;
-    const total = qte * prix;
-    const paye = parseFloat(document.getElementById('montant_paye').value) || 0;
-    const reste = Math.max(0, total - paye);
-    
-    document.getElementById('montant_total').value = total;
-    document.getElementById('montant_restant').value = reste;
-    
-    // Feedback visuel
-    const resteInput = document.getElementById('montant_restant');
-    resteInput.classList.remove('text-success', 'text-danger');
-    resteInput.classList.add(reste > 0 ? 'text-danger' : 'text-success');
-}
-// Écouteurs d'événements
-['quantite', 'prix_unitaire', 'montant_paye'].forEach(id => {
-    document.getElementById(id).addEventListener('input', calculerPaiement);
+document.addEventListener('DOMContentLoaded', function() {
+    const unites = document.getElementById('unites'), prix = document.getElementById('prix'), paye = document.getElementById('paye');
+    const totalD = document.getElementById('totalDisplay'), resteD = document.getElementById('resteDisplay');
+    const totalH = document.getElementById('totalHidden'), resteH = document.getElementById('resteHidden');
+    const ref = document.getElementById('refInput');
+    if(!ref.value) { const d = new Date().toISOString().slice(2,10).replace(/-/g,''); ref.value = `REC-${d}-${Math.floor(Math.random()*900+100)}`; }
+    function calc() {
+        const q = parseFloat(unites.value)||0, p = parseFloat(prix.value)||0, v = parseFloat(paye.value)||0;
+        const t = q*p, r = Math.max(0, t-v);
+        totalD.textContent = t.toLocaleString('fr-FR')+' FCFA'; resteD.textContent = r.toLocaleString('fr-FR')+' FCFA';
+        totalH.value = t; resteH.value = r; resteD.className = `fs-4 fw-bold ${r>0?'text-danger':'text-success'}`;
+    }
+    [unites, prix, paye].forEach(e => e.addEventListener('input', calc)); calc();
 });
-// Calcul initial
-calculerPaiement();
 </script>
 {% endblock %}
