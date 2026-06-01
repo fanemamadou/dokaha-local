@@ -13,30 +13,41 @@
             <label class="form-label fw-bold">Type d'imputation *</label>
             <div class="btn-group w-100" role="group">
                 <input type="radio" class="btn-check" name="type_depense" id="type_gen" value="generale" checked onchange="togglePoulaillers()">
-                <label class="btn btn-outline-dark" for="type_gen">🏢 Générale</label>
+                <label class="btn btn-outline-dark py-2" for="type_gen">🏢 Générale</label>
                 
                 <input type="radio" class="btn-check" name="type_depense" id="type_uni" value="unique" onchange="togglePoulaillers()">
-                <label class="btn btn-outline-dark" for="type_uni">🐔 1 Poulailler</label>
+                <label class="btn btn-outline-dark py-2" for="type_uni">🐔 1 Poulailler</label>
                 
                 <input type="radio" class="btn-check" name="type_depense" id="type_part" value="partagee" onchange="togglePoulaillers()">
-                <label class="btn btn-outline-dark" for="type_part">🔄 Partagée</label>
+                <label class="btn btn-outline-dark py-2" for="type_part">🔄 Partagée</label>
             </div>
         </div>
 
         <!-- SÉLECTEURS POULAILLERS (cachés par défaut) -->
         <div id="zonePoulaillers" class="mb-3 d-none">
             <label class="form-label fw-bold">Poulailler(s) concerné(s) *</label>
+            
+            <!-- 1 SEUL -->
             <div id="selectUnique" class="d-none">
                 <select name="poulailler_id" class="form-select form-select-lg">
                     <option value="">-- Choisir le bâtiment --</option>
                     {% for p in poulaillers %}<option value="{{ p.id }}">{{ p.nom }}</option>{% endfor %}
                 </select>
             </div>
+            
+            <!-- PARTAGÉE : CASES À COCHER -->
             <div id="selectPartage" class="d-none">
-                <select name="poulaillers_partages" class="form-select form-select-lg" multiple size="4">
-                    {% for p in poulaillers %}<option value="{{ p.id }}">{{ p.nom }}</option>{% endfor %}
-                </select>
-                <small class="text-muted">Maintiens Ctrl (ou tap long) pour en sélectionner plusieurs</small>
+                <div class="row g-2">
+                    {% for p in poulaillers %}
+                    <div class="col-6 col-md-4">
+                        <div class="form-check form-check-inline p-2 border rounded w-100 bg-light">
+                            <input class="form-check-input me-2" type="checkbox" name="poulaillers_partages" value="{{ p.id }}" id="check_{{ p.id }}">
+                            <label class="form-check-label fw-bold fs-6" for="check_{{ p.id }}">{{ p.nom }}</label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <small class="text-muted mt-1 d-block">✅ Coche tous les bâtiments concernés</small>
             </div>
         </div>
 
@@ -53,7 +64,7 @@
         </div>
         <div class="mb-4">
             <label class="form-label fw-bold">Montant (FCFA) *</label>
-            <input type="number" name="montant" class="form-control form-control-lg" min="1" step="100" required placeholder="Ex: 25000">
+            <input type="number" name="montant" class="form-control form-control-lg" min="1" step="1" required placeholder="Ex: 25000">
         </div>
         {% if messages %}{% for m in messages %}<div class="alert alert-{{ m.tags }} mb-3">{{ m }}</div>{% endfor %}{% endif %}
         <div class="d-grid gap-2">

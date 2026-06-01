@@ -569,7 +569,12 @@ def depense_add(request):
         montant_str = request.POST.get('montant', '').replace(' ', '').replace(',', '.')
         description = request.POST.get('description', '').strip()
         
-        try: montant = float(montant_str) if montant_str else 0
+        try:
+            # Nettoyage format CI : on enlève espaces et virgules, on garde les chiffres
+            clean_str = montant_str.replace(' ', '').replace(',', '')
+            montant = float(clean_str) if clean_str else 0
+        except ValueError:
+            montant = 0
         except ValueError: montant = 0
 
         if not categorie or montant <= 0:
