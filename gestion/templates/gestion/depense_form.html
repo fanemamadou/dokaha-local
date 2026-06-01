@@ -14,16 +14,14 @@
             <div class="btn-group w-100" role="group">
                 <input type="radio" class="btn-check" name="type_depense" id="type_gen" value="generale" checked onchange="togglePoulaillers()">
                 <label class="btn btn-outline-dark py-2" for="type_gen">🏢 Générale</label>
-                
                 <input type="radio" class="btn-check" name="type_depense" id="type_uni" value="unique" onchange="togglePoulaillers()">
                 <label class="btn btn-outline-dark py-2" for="type_uni">🐔 1 Poulailler</label>
-                
                 <input type="radio" class="btn-check" name="type_depense" id="type_part" value="partagee" onchange="togglePoulaillers()">
                 <label class="btn btn-outline-dark py-2" for="type_part">🔄 Partagée</label>
             </div>
         </div>
 
-        <!-- SÉLECTEURS POULAILLERS (cachés par défaut) -->
+        <!-- ZONE POULAILLERS -->
         <div id="zonePoulaillers" class="mb-3 d-none">
             <label class="form-label fw-bold">Poulailler(s) concerné(s) *</label>
             
@@ -35,19 +33,17 @@
                 </select>
             </div>
             
-            <!-- PARTAGÉE : CASES À COCHER -->
+            <!-- PARTAGÉE : BOUTONS COCHABLES (Bien visibles) -->
             <div id="selectPartage" class="d-none">
                 <div class="row g-2">
                     {% for p in poulaillers %}
                     <div class="col-6 col-md-4">
-                        <div class="form-check form-check-inline p-2 border rounded w-100 bg-light">
-                            <input class="form-check-input me-2" type="checkbox" name="poulaillers_partages" value="{{ p.id }}" id="check_{{ p.id }}">
-                            <label class="form-check-label fw-bold fs-6" for="check_{{ p.id }}">{{ p.nom }}</label>
-                        </div>
+                        <input type="checkbox" class="btn-check" name="poulaillers_partages" value="{{ p.id }}" id="pchk_{{ p.id }}" autocomplete="off">
+                        <label class="btn btn-outline-success w-100 py-3 fw-bold" for="pchk_{{ p.id }}">{{ p.nom }}</label>
                     </div>
                     {% endfor %}
                 </div>
-                <small class="text-muted mt-1 d-block">✅ Coche tous les bâtiments concernés</small>
+                <small class="text-muted mt-1 d-block">✅ Touche les boutons pour sélectionner plusieurs bâtiments (ils deviennent verts)</small>
             </div>
         </div>
 
@@ -79,7 +75,6 @@ function togglePoulaillers() {
     const zone = document.getElementById('zonePoulaillers');
     const uni = document.getElementById('selectUnique');
     const part = document.getElementById('selectPartage');
-    
     if (type === 'generale') { zone.classList.add('d-none'); }
     else {
         zone.classList.remove('d-none');
