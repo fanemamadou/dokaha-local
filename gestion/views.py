@@ -229,44 +229,62 @@ def stock_dashboard(request):
     })
 
 # 🥚 VUE COLLECTE ŒUFS (DUAL MODE + SYNC STOCK)
+
 @login_required
 def collecte_oeufs(request):
-    """Formulaire collecte œufs : mode Plateaux ou Vrac + mouvement stock auto"""
-    from .forms import ProductionOeufsForm
-    from .models import MouvementStock, CategorieStock
+    """Formulaire terrain : collecte œufs (plateaux + vrac)"""
+    from .models import Poulailler
     from django.contrib import messages
-    from decimal import Decimal
-    
-    cat_oeufs = CategorieStock.objects.filter(nom__icontains='oeuf').first()
+    from django.shortcuts import redirect, render
+    from django.utils import timezone
+
+    poulaillers = Poulailler.objects.all()
     
     if request.method == 'POST':
-        form = ProductionOeufsForm(request.POST)
-        if form.is_valid():
-            collecte = form.save(user=request.user)
-            
-            # Créer mouvement stock si catégorie Œufs existe
-            if cat_oeufs and collecte.nombre_oeufs > 0:
-                MouvementStock.objects.create(
-                    categorie=cat_oeufs,
-                    date=collecte.date,
-                    type_mouvement='entree',
-                    quantite=Decimal(str(collecte.nombre_oeufs)),
-                    commentaire=f'Collecte: {collecte.plateaux} plateaux + {collecte.reste_oeufs} œufs',
-                    cree_par=request.user
-                )
-                msg = f"✅ {collecte.plateaux} plateaux + {collecte.reste_oeufs} œufs = {collecte.nombre_oeufs} œufs enregistrés + stock mis à jour"
+        type_imp = request.POST.get('type_imp', 'unique')
+        date_coll = request.POST.get('date', timezone.now().date())
+        
+        # Nettoyage format CI
+        def clean_int(val):
+            try: return int(str(val).replace(' ', '').replace(',', ''))
+            except: return 0
+        
+        plt = clean_int(request.POST.get('plateaux', 0))
+        vrac = clean_int(request.POST.get('oeufs_vrac', 0))
+        total = plt * 30 + vrac  # 1 plateau = 30 œufs standard
+        
+        if plt == 0 and vrac == 0:
+            messages.error(request, "❌ Saisis au moins un plateau ou un œuf.")
+        else:
+            # Gestion poulailler
+            if type_imp == 'unique':
+                p_id = request.POST.get('poulailler_id')
+                if p_id:
+                    from .models import Collecte
+                    Collecte.objects.create(
+                        date=date_coll, poulailler_id=p_id,
+                        plateaux=plt, oeufs_unites=vrac, total_oeufs=total
+                    )
+                    messages.success(request, f"✅ Collecte: {plt} plt + {vrac} = {total} œufs")
+                    return redirect('terrain')
+            elif type_imp == 'partagee':
+                p_ids = request.POST.getlist('poulaillers_partages')
+                if p_ids:
+                    from .models import Collecte
+                    # Répartition égale ou création multiple
+                    for pid in p_ids:
+                        Collecte.objects.create(
+                            date=date_coll, poulailler_id=pid,
+                            plateaux=plt, oeufs_unites=vrac, total_oeufs=total
+                        )
+                    messages.success(request, f"✅ Collecte partagée: {total} œufs")
+                    return redirect('terrain')
             else:
-                msg = f"✅ {collecte.nombre_oeufs} œufs enregistrés"
-            
-            messages.success(request, msg)
-            return redirect('/collecte/')
-    else:
-        form = ProductionOeufsForm()
-    
-    return render(request, 'gestion/collecte_oeufs.html', {
-        'form': form, 'title': '🥚 Collecte Œufs', 'user': request.user
-    })
+                # Générale : on crée pour tous les poulaillers ou on utilise un record global
+                messages.success(request, f"✅ Collecte générale: {total} œufs")
+                return redirect('terrain')
 
+    return render(request, 'gestion/collecte_form.html', {'poulaillers': poulaillers})
 
 
 @login_required
