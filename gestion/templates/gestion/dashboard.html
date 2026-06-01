@@ -1,7 +1,31 @@
 {% extends "gestion/base.html" %}
 {% block content %}
 <div class="container-fluid px-4 mt-4">
-    <h2 class="mb-4 fw-bold text-primary">🏠 Tableau de Bord Principal</h2>
+    <h2 class="mb-3 fw-bold text-primary">🏠 Tableau de Bord Principal</h2>
+
+    <!-- 🚨 ALERTES PROACTIVES -->
+    {% if alerte_tresorerie %}
+    <div class="alert alert-danger d-flex align-items-center shadow-sm mb-3" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
+        <div>
+            <strong>⚠️ Attention : Trésorerie Négative !</strong><br>
+            <small>Les dépenses dépassent les recettes. Pensez à relancer les crédits en attente.</small>
+        </div>
+        <a href="/credits/" class="btn btn-sm btn-danger ms-auto">Voir Crédits</a>
+    </div>
+    {% endif %}
+
+    {% if alerte_mortalite %}
+    <div class="alert alert-warning d-flex align-items-center shadow-sm mb-3" role="alert">
+        <i class="bi bi-heart-pulse-fill me-2 fs-4"></i>
+        <div>
+            <strong>⚠️ Alerte Sanitaire :</strong> Mortalité élevée cette semaine ({{ mortalite_week }} sujets).<br>
+            <small>Surveillez vos poulaillers et vérifiez les traitements.</small>
+        </div>
+        <a href="/mortalite/ajouter/" class="btn btn-sm btn-warning ms-auto">Saisir</a>
+    </div>
+    {% endif %}
+
 
     <div class="row g-3 mb-4">
         <div class="col-md-3 col-sm-6">
