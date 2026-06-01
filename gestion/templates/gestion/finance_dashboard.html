@@ -1,0 +1,23 @@
+{% extends "gestion/base.html" %}
+{% block content %}
+<div class="container mt-4" style="max-width:1000px">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold text-primary mb-0">📊 Finance</h3>
+        <a href="{% url 'finance_export_excel' %}" class="btn btn-success btn-sm">📥 Export Excel</a>
+    </div>
+    <div class="card shadow-sm mb-4"><div class="card-body py-2">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-auto"><label class="small fw-bold">Du</label><input type="date" name="start" class="form-control form-control-sm" value="{{ start_date }}"></div>
+            <div class="col-auto"><label class="small fw-bold">Au</label><input type="date" name="end" class="form-control form-control-sm" value="{{ end_date }}"></div>
+            <div class="col-auto align-self-end"><button type="submit" class="btn btn-sm btn-primary">🔍</button></div>
+            <div class="col-auto align-self-end"><a href="{% url 'finance_dashboard' %}" class="btn btn-sm btn-outline-secondary">↺</a></div>
+        </form>
+    </div></div>
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="card border-start border-4 border-success p-3"><h6 class="text-muted">Recettes</h6><h3 class="fw-bold text-success">{{ total_recettes|default:0 }} F</h3></div></div>
+        <div class="col-md-4"><div class="card border-start border-4 border-danger p-3"><h6 class="text-muted">Dépenses</h6><h3 class="fw-bold text-danger">{{ total_depenses|default:0 }} F</h3></div></div>
+        <div class="col-md-4"><div class="card border-start border-4 {% if tresorerie >= 0 %}border-primary{% else %}border-warning{% endif %} p-3"><h6 class="text-muted">Trésorerie</h6><h3 class="fw-bold {% if tresorerie >= 0 %}text-primary{% else %}text-warning{% endif %}">{{ tresorerie|default:0 }} F</h3></div></div>
+    </div>
+    <a href="/dashboard/" class="btn btn-outline-secondary">️ Retour</a>
+</div>
+{% endblock %}

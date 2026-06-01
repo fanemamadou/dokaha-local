@@ -1,0 +1,63 @@
+{% extends "gestion/base.html" %}
+{% block content %}
+<div class="container-fluid px-2 px-md-4 mt-3" style="max-width:650px">
+    {% if messages %}
+    <div class="mb-3">
+        {% for m in messages %}
+        <div class="alert alert-{{ m.tags }} alert-dismissible fade show fw-bold shadow-sm">{{ m }} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold text-warning mb-0">🥚 Collecte Œufs</h3>
+        <a href="/terrain/" class="btn btn-outline-secondary btn-sm">↩️ Retour</a>
+    </div>
+    <form method="POST" class="card shadow-sm p-3">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label fw-bold">🏠 Poulailler *</label>
+            <select name="poulailler_id" class="form-select form-select-lg" required>
+                <option value="">-- Choisir --</option>
+                {% for p in poulaillers %}<option value="{{ p.id }}">{{ p.nom }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold">📅 Date</label>
+            <input type="date" name="date" class="form-control form-control-lg" value="{{ today|date:'Y-m-d' }}" required>
+        </div>
+        <div class="card bg-light p-3 mb-3 border-2">
+            <h6 class="fw-bold text-center mb-3">🔄 Saisie intelligente</h6>
+            <div class="mb-3">
+                <label class="small text-muted fw-bold">Option A : Seau vrac</label>
+                <input type="number" id="modeA" class="form-control form-control-lg fw-bold text-center" placeholder="Ex: 321 œufs" oninput="syncFromA()">
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <label class="small text-muted fw-bold">Option B : Plateaux</label>
+                    <input type="number" name="plateaux" id="modePlt" class="form-control form-control-lg fw-bold text-center" placeholder="Plateaux" min="0" value="0" oninput="syncFromB()">
+                    <small class="text-muted d-block text-center">x 30</small>
+                </div>
+                <div class="col-6">
+                    <label class="small text-muted fw-bold">Option B : Vrac</label>
+                    <input type="number" name="oeufs_vrac" id="modeVrac" class="form-control form-control-lg fw-bold text-center" placeholder="Œufs vrac" min="0" value="0" oninput="syncFromB()">
+                </div>
+            </div>
+            <div class="alert alert-primary text-center py-2 mb-0 fw-bold" id="displayResult">0 œufs = 0 plt + 0 vrac</div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label fw-bold text-danger">💔 Œufs Cassés</label>
+            <input type="number" name="oeufs_casses" class="form-control form-control-lg text-center fw-bold text-danger" min="0" value="0">
+        </div>
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-warning btn-lg fw-bold shadow">💾 ENREGISTRER</button>
+            <a href="/terrain/" class="btn btn-outline-secondary">Annuler</a>
+        </div>
+    </form>
+</div>
+<script>
+function syncFromA(){var t=parseInt(document.getElementById('modeA').value)||0;var p=Math.floor(t/30);var v=t%30;document.getElementById('modePlt').value=p;document.getElementById('modeVrac').value=v;upd(t,p,v);}
+function syncFromB(){var p=parseInt(document.getElementById('modePlt').value)||0;var v=parseInt(document.getElementById('modeVrac').value)||0;var t=(p*30)+v;document.getElementById('modeA').value=t;upd(t,p,v);}
+function upd(t,p,v){document.getElementById('displayResult').textContent=t+" œufs = "+p+" plt + "+v+" vrac";}
+document.addEventListener('DOMContentLoaded',syncFromB);
+</script>
+{% endblock %}

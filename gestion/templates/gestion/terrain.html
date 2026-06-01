@@ -1,0 +1,48 @@
+{% extends "gestion/base.html" %}
+{% block content %}
+<div class="container-fluid px-2 px-md-4 mt-2 mt-md-4">
+    <!-- 📊 KPIs TERRAIN -->
+    <div class="row g-2 mb-3">
+        <div class="col-6">
+            <div class="card bg-primary text-white p-2 text-center shadow-sm">
+                <small>🐔 CHEPTEL ACTUEL</small>
+                <h3 class="fw-bold mb-0">{{ total_cheptel|default:0 }}</h3>
+            </div>
+        </div>
+        <div class="col-6">
+            <div class="card bg-danger text-white p-2 text-center shadow-sm">
+                <small>⚠️ ALERTES</small>
+                <h3 class="fw-bold mb-0">{% if alerte_mortalite or alerte_tresorerie %}2{% else %}0{% endif %}</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- 📱 GRILLE OUTILS FLATIE -->
+    <div class="row g-2 g-md-3">
+        <div class="col-6 col-md-3"><a href="/mortalite/ajouter/" class="btn btn-danger w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">💀</span><span class="fw-bold">MORTALITÉ</span><small class="opacity-75">Saisir pertes</small></a></div>
+        <div class="col-6 col-md-3"><a href="/collecte/" class="btn btn-warning w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-dark"><span class="fs-1 mb-1"></span><span class="fw-bold">COLLECTE</span><small class="opacity-75">ufs du jour</small></a></div>
+        <div class="col-6 col-md-3"><a href="/vente/oeufs/" class="btn btn-success w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1"></span><span class="fw-bold">VENTE</span><small class="opacity-75">Enregistrer</small></a></div>
+        <div class="col-6 col-md-3"><a href="/stock/" class="btn btn-info w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">📦</span><span class="fw-bold">STOCK</span><small class="opacity-75">Aliments/Vaccins</small></a></div>
+        <div class="col-6 col-md-3"><a href="/cheptel/" class="btn btn-primary w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">🐔</span><span class="fw-bold">CHEPTEL</span><small class="opacity-75">Effectif réel</small></a></div>
+        <div class="col-6 col-md-3"><a href="/depense/add/" class="btn btn-dark w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">💸</span><span class="fw-bold">DÉPENSES</span><small class="opacity-75">Achat/Transport</small></a></div>
+        <div class="col-6 col-md-3"><a href="/sante/" class="btn btn-secondary w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">🩺</span><span class="fw-bold">SANTÉ</span><small class="opacity-75">Vaccins/Soins</small></a></div>
+        <div class="col-6 col-md-3"><a href="/rapport-jour/" class="btn btn-outline-primary w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center"><span class="fs-1 mb-1">📊</span><span class="fw-bold">RAPPORT</span><small class="text-muted">Récap journée</small></a></div>
+    </div>
+
+    <!-- 📜 ACTIVITÉ RÉCENTE (Format date simple : d/m/Y) -->
+    <div class="card shadow-sm mt-3 mb-4">
+        <div class="card-header bg-white fw-bold">🕒 Dernières Saisies</div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <tbody>
+                    {% for a in activites_recentes %}
+                    <tr><td class="small text-muted">{{ a.date|date:"d/m/Y" }}</td><td class="fw-bold">{{ a.type }}</td><td class="small">{{ a.detail }}</td></tr>
+                    {% empty %}
+                    <tr><td colspan="3" class="text-center py-3 text-muted">Aucune saisie aujourd'hui</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

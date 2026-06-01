@@ -235,46 +235,34 @@ def stock_dashboard(request):
 
 
 
+
 @login_required
 def collecte_oeufs(request):
-    """Collecte terrain : poulailler + stock sain + cassés"""
     from django.contrib import messages
     from django.shortcuts import redirect, render
     from django.utils import timezone
-    from .models import Poulailler
-
+    from datetime import datetime
+    from .models import Poulailler, Collecte
     poulaillers = Poulailler.objects.all()
-    
     if request.method == 'POST':
-        p_id = request.POST.get('poulailler_id')
-        date_coll = request.POST.get('date', timezone.now().date())
-        
         try:
-            plt = int(request.POST.get('plateaux', 0) or 0)
-            vrac = int(request.POST.get('oeufs_vrac', 0) or 0)
-            total = int(request.POST.get('total_oeufs', 0) or 0)
-            casses = int(request.POST.get('oeufs_casses', 0) or 0)
-        except: plt = vrac = total = casses = 0
-        
-        if not p_id:
-            messages.error(request, "❌ Choisis le poulailler.")
-        elif total == 0 and casses == 0:
-            messages.error(request, "❌ Entre au moins un œuf (sain ou cassé).")
-        else:
-            try:
-                from .models import Collecte
-                Collecte.objects.create(
-                    date=date_coll, poulailler_id=p_id,
-                    plateaux=plt, oeufs_unites=vrac, total_oeufs=total,
-                    oeufs_casses=casses
-                )
-                msg = f"✅ Sains: {total} | 💔 Cassés: {casses}"
-                messages.success(request, msg)
-            except Exception as e:
-                messages.error(request, f"⚠️ {e}")
+            pid=request.POST.get('poulailler_id')
+            ds=request.POST.get('date')
+            dc=datetime.strptime(ds,'%Y-%m-%d').date() if ds else timezone.localdate()
+            plt=int(request.POST.get('plateaux',0) or 0)
+            vrc=int(request.POST.get('oeufs_vrac',0) or 0)
+            cas=int(request.POST.get('oeufs_casses',0) or 0)
+            tot=(plt*30)+vrc
+            if not pid:
+                messages.error(request,'❌ Sélectionne un poulailler.')
+                return redirect('collecte_oeufs')
+            Collecte.objects.create(date=dc,poulailler_id=pid,plateaux=plt,oeufs_unites=vrc,total_oeufs=tot,oeufs_casses=cas)
+            messages.success(request,'✅ Collecte validée : '+str(tot)+' œufs sains ('+str(plt)+' plt + '+str(vrc)+' vrac) + '+str(cas)+' cassés')
             return redirect('terrain')
-    
-    return render(request, 'gestion/collecte_form.html', {'poulaillers': poulaillers, 'today': timezone.now()})
+        except Exception as e:
+            messages.error(request,'❌ Erreur: '+str(e))
+            return redirect('collecte_oeufs')
+    return render(request,'gestion/collecte_form.html',{'poulaillers':poulaillers,'today':timezone.now()})
 
 
 @login_required

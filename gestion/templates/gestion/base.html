@@ -20,6 +20,14 @@
             .dropdown-menu { position:static; float:none; width:100%; border:none; box-shadow:none; }
         }
     </style>
+
+<style>
+.alert { color: #000 !important; background-color: #fff !important; border: 2px solid #ccc !important; padding: 1rem !important; font-size: 1.1rem !important; font-weight: 600 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important; }
+.alert-success { background-color: #d1e7dd !important; color: #0f5132 !important; border-color: #badbcc !important; }
+.alert-danger { background-color: #f8d7da !important; color: #842029 !important; border-color: #f5c2c7 !important; }
+.alert-warning { background-color: #fff3cd !important; color: #664d03 !important; border-color: #ffecb5 !important; }
+</style>
+
 </head>
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
@@ -49,7 +57,13 @@
             <a href="/admin/logout/" class="btn btn-sm btn-outline-danger">Quitter</a>
         </div>
     </div>
-</nav>
+
+    <div class="d-flex align-items-center ms-auto me-2 gap-2">
+        <a href="/terrain/" class="btn btn-sm btn-warning fw-bold px-3 shadow-sm">📱 Terrain</a>
+        <a href="/admin/" class="btn btn-sm btn-outline-light fw-bold px-3">⚙️ Admin</a>
+    </div>
+    
+    </nav>
 
 <div class="container-fluid px-3 py-3">
     {% if messages %}

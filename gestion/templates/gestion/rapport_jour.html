@@ -1,0 +1,59 @@
+{% extends "gestion/base.html" %}
+{% block content %}
+<div class="container-fluid px-2 px-md-4 mt-3" style="max-width:950px">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold text-primary mb-0">📊 Rapport du {{ date_str }}</h3>
+        <a href="/terrain/" class="btn btn-outline-secondary btn-sm">️ Retour</a>
+    </div>
+
+    <!-- TABLEAU DÉTAILLÉ -->
+    {% if debug_msg %}
+        <div class="alert alert-warning mb-3 fw-bold">⚠️ {{ debug_msg }}</div>
+        {% endif %}
+        <div class="table-responsive bg-white rounded shadow-sm mb-3">
+        <table class="table table-sm table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="fw-bold">Poulailler</th>
+                    <th class="text-center fw-bold">🥚 Collecte</th>
+                    <th class="text-center fw-bold text-danger">💔 Cassés</th>
+                    <th class="text-center fw-bold">💀 Morts</th>
+                    <th class="text-center fw-bold"> Traitement</th>
+                    <th class="fw-bold">📝 Obs</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for d in data %}
+                <tr>
+                    <td class="fw-bold">{{ d.nom }}</td>
+                    <td class="text-center"><span class="badge bg-warning text-dark fs-6">{{ d.plt }} plt + {{ d.oeufs }} œufs</span></td>
+                    <td class="text-center fw-bold {% if d.casses > 0 %}text-danger{% else %}text-success{% endif %}">{{ d.casses }}</td>
+                    <td class="text-center fw-bold {% if d.mort > 0 %}text-danger{% else %}text-success{% endif %}">{{ d.mort }}</td>
+                    <td class="text-center">{% if d.tx == "Oui" %}<span class="badge bg-success">Oui</span>{% else %}<span class="badge bg-secondary">Non</span>{% endif %}</td>
+                    <td class="small text-muted">{{ d.obs|default:"-" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="text-center py-3 text-muted">Aucun poulailler enregistré</td></tr>
+                {% endfor %}
+                <!-- LIGNE TOTAUX -->
+                <tr class="table-dark fw-bold">
+                    <td>TOTAL JOUR</td>
+                    <td class="text-center">{{ t_plt }} plt + {{ t_oeufs }} œufs</td>
+                    <td class="text-center">{{ t_casses }}</td>
+                    <td class="text-center">{{ t_mort }}</td>
+                    <td class="text-center">-</td>
+                    <td>-</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ZONE WHATSAPP -->
+    <div class="card shadow-sm p-3">
+        <label class="form-label fw-bold"> Résumé copier-coller (WhatsApp)</label>
+        <textarea class="form-control font-monospace small" rows="7" id="rapportBox" readonly>{{ rapport_text }}</textarea>
+        <button onclick="copierRapport()" class="btn btn-primary w-100 mt-2 fw-bold py-3"> COPIER LE RAPPORT</button>
+    </div>
+</div>
+<script>function copierRapport(){const t=document.getElementById('rapportBox');t.select();document.execCommand('copy');alert('✅ Rapport copié !');}</script>
+{% endblock %}

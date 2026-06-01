@@ -1,0 +1,6 @@
+
+# Production
+*.pyc
+__pycache__/
+*.sqlite3
+.env

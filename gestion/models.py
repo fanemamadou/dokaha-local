@@ -217,17 +217,16 @@ class SanteRecord(models.Model):
     note = models.TextField(blank=True)
     def __str__(self): return f"{self.date} - {self.type_sante}"
 
+
+
 class Collecte(models.Model):
-    """Collecte quotidienne d'œufs"""
+    """Collecte quotidienne d'œufs par poulailler"""
     date = models.DateField()
+    poulailler = models.ForeignKey('gestion.Poulailler', on_delete=models.SET_NULL, null=True, blank=True)
     plateaux = models.IntegerField(default=0)
     oeufs_unites = models.IntegerField(default=0)
     total_oeufs = models.IntegerField(default=0)
-    
-    def __str__(self):
-        return f"{self.date}: {self.total_oeufs} œufs"
-    
-    class Meta:
-        ordering = ['-date']
-        verbose_name = "Collecte"
-        verbose_name_plural = "Collectes"
+    oeufs_casses = models.IntegerField(default=0)
+
+    def __str__(self): return f"Collecte {self.date}"
+    class Meta: ordering = ['-date']

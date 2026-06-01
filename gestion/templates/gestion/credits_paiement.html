@@ -1,0 +1,27 @@
+{% extends "gestion/base.html" %}
+{% block content %}
+<div class="container mt-4" style="max-width:600px">
+    <h3 class="mb-3 fw-bold text-primary">💰 Enregistrer un Paiement</h3>
+    <div class="card shadow-sm mb-3">
+        <div class="card-body">
+            <p class="mb-1"><strong>Client :</strong> {{ vente.client }}</p>
+            <p class="mb-1"><strong>Total Vente :</strong> {{ vente.montant_total|floatformat:0 }} FCFA</p>
+            <p class="mb-1"><strong>Déjà versé :</strong> {{ vente.montant_paye|default:0|floatformat:0 }} FCFA</p>
+            <hr>
+            <p class="mb-0 fs-4"><strong>Reste à payer :</strong> <span class="text-danger">{{ vente.montant_restant|floatformat:0 }} FCFA</span></p>
+        </div>
+    </div>
+    <form method="POST" class="card shadow-sm p-3">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label fw-bold">Montant à verser (FCFA) *</label>
+            <input type="number" name="montant" class="form-control form-control-lg" min="1" placeholder="Ex: 5000" step="1" required placeholder="Ex: 5000">
+            <small class="text-muted">Indiquez le montant versé aujourd'hui. Si = reste, la créance sera clôturée.</small>
+        </div>
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-success btn-lg fw-bold">💾 Valider le Paiement</button>
+            <a href="{% url 'credits_list' %}" class="btn btn-outline-secondary">↩️ Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

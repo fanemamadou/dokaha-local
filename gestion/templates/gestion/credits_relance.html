@@ -1,0 +1,21 @@
+{% extends "gestion/base.html" %}
+{% block content %}
+<div class="container mt-4" style="max-width:700px">
+    <h3 class="mb-4 fw-bold text-warning">💬 Relance Client</h3>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark"><h5 class="mb-0">Client : {{ vente.client|default:"Inconnu" }}</h5></div>
+        <div class="card-body">
+            <p><strong>Reste à payer :</strong> <span class="text-danger fs-4">{{ vente.montant_restant|floatformat:0 }} FCFA</span></p>
+            <hr>
+            <label class="form-label fw-bold">Message à copier/envoyer :</label>
+            <textarea class="form-control" rows="7" id="msgBox" readonly>{{ message }}</textarea>
+            <div class="d-grid gap-2 mt-3">
+                <button onclick="copier()" class="btn btn-primary btn-lg">📋 Copier le Message</button>
+                <a href="https://wa.me/?text={{ message|urlencode }}" target="_blank" class="btn btn-success btn-lg">📲 Ouvrir WhatsApp</a>
+            </div>
+        </div>
+    </div>
+    <a href="{% url 'credits_list' %}" class="btn btn-secondary">↩️ Retour Liste</a>
+</div>
+<script>function copier(){document.getElementById('msgBox').select();document.execCommand('copy');alert('Message copié !');}</script>
+{% endblock %}

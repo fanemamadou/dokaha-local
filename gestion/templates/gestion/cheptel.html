@@ -1,0 +1,52 @@
+{% extends "gestion/base.html" %}
+{% block content %}
+<div class="container-fluid px-2 px-md-4 mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="fw-bold text-primary mb-0">🐔 Cheptel Réel</h3>
+        <a href="/terrain/" class="btn btn-outline-secondary btn-sm">↩️ Retour Terrain</a>
+    </div>
+    
+    <!-- TOTAL GÉNÉRAL -->
+    <div class="card bg-primary text-white p-3 mb-3 text-center">
+        <small class="opacity-75">EFFECTIF TOTAL ACTUEL</small>
+        <h2 class="fw-bold mb-0">{{ total_reel }} sujets</h2>
+    </div>
+    
+    <!-- LISTE PAR POULAILLER -->
+    <div class="row g-2">
+        {% for p in poulaillers %}
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm {% if p.alerte %}border-warning border-2{% endif %}">
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="fw-bold mb-0">{{ p.nom }}</h5>
+                        {% if p.alerte %}<span class="badge bg-warning text-dark">⚠️ Alerte</span>{% endif %}
+                    </div>
+                    <div class="row text-center g-2">
+                        <div class="col-4">
+                            <small class="text-muted d-block">Initial</small>
+                            <span class="fw-bold">{{ p.initial }}</span>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-danger d-block">Morts</small>
+                            <span class="fw-bold text-danger">{{ p.mortalite }}</span>
+                        </div>
+                        <div class="col-4">
+                            <small class="text-info d-block">Vendus</small>
+                            <span class="fw-bold text-info">{{ p.vendus }}</span>
+                        </div>
+                    </div>
+                    <hr class="my-2">
+                    <div class="text-center">
+                        <small class="text-muted d-block">Reste</small>
+                        <h3 class="fw-bold text-primary mb-0">{{ p.reel }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12"><p class="text-center text-muted py-4">Aucun poulailler enregistré</p></div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
