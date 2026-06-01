@@ -639,3 +639,62 @@ def sante_form(request):
             messages.success(request, f"✅ Santé enregistrée ({produit}).")
             return redirect('terrain')
     return render(request, 'gestion/sante_form.html', {'poulaillers': poulaillers})
+
+
+@login_required
+def rapport_jour(request):
+    """Rapport quotidien terrain - Version sécurisée"""
+    from .models import Poulailler, SortiePoules
+    from django.db.models import Sum
+    from django.shortcuts import render
+    from datetime import date
+
+    today = date.today()
+    date_str = today.strftime("%d/%m/%Y")
+    
+    data = []
+    t_mort, t_plt, t_oeufs = 0, 0, 0
+
+    for p in Poulailler.objects.all():
+        # Mortalité (toujours disponible)
+        mort = int(SortiePoules.objects.filter(date=today, poulailler=p, type_sortie='mortalite').aggregate(t=Sum('nombre'))['t'] or 0)
+        t_mort += mort
+        
+        # Collecte : tentative sécurisée avec fallback
+        plt, oeufs = 0, 0
+        try:
+            from .models import Collecte
+            c = Collecte.objects.filter(date=today, poulailler=p).first()
+            if c:
+                # Essaye plusieurs noms de champs possibles
+                plt = int(getattr(c, 'plateaux', getattr(c, 'unites', 0)) or 0)
+                oeufs = int(getattr(c, 'oeufs_unites', getattr(c, 'oeufs', getattr(c, 'unites', 0))) or 0)
+        except:
+            pass  # Si Collecte n'existe pas, on reste à 0
+            
+        t_plt += plt
+        t_oeufs += oeufs
+        
+        # Traitement & Obs (sécurisé)
+        try:
+            from .models import SanteRecord
+            treated = "Oui" if SanteRecord.objects.filter(date=today, poulailler=p).exists() else "Non"
+            obs = ""
+            rec = SanteRecord.objects.filter(date=today, poulailler=p).last()
+            if rec and rec.note: obs = rec.note[:20]
+        except:
+            treated, obs = "Non", ""
+            
+        data.append({'nom': p.nom, 'mort': mort, 'plt': plt, 'oeufs': oeufs, 'tx': treated, 'obs': obs})
+
+    # Texte WhatsApp
+    txt = f" RAPPORT {date_str}\n"
+    for d in data:
+        txt += f" {d['nom']}: {d['plt']}plt+{d['oeufs']} | {d['mort']}m | {d['tx']}\n"
+    txt += f" TOTAL: {t_plt}plt + {t_oeufs} | {t_mort}morts"
+
+    return render(request, 'gestion/rapport_jour.html', {
+        'date_str': date_str, 'data': data,
+        't_mort': t_mort, 't_plt': t_plt, 't_oeufs': t_oeufs,
+        'rapport_text': txt
+    })

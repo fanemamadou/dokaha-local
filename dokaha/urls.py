@@ -22,6 +22,6 @@ urlpatterns = [
     path('cheptel/', views.cheptel, name='cheptel'),
     path('depense/add/', views.depense_add, name='depense_add'),
     path('sante/', views.sante_form, name='sante'),
-    path('rapport-jour/', views.dashboard, name='rapport_jour'),
+    path('rapport-jour/', views.rapport_jour, name='rapport_jour'),
     path('terrain/', views.terrain, name='terrain'),
 ]
