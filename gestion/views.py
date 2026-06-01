@@ -22,20 +22,49 @@ def stock_historique(request):
 
 @login_required
 def dashboard(request):
-    """Dashboard principal garanti fonctionnel"""
-    from .models import Poulailler, Vente, Depense
+    """Dashboard: KPIs + Actions + Activité Récente"""
+    from .models import Poulailler, Vente, Depense, SortiePoules
     from django.db.models import Sum
-    
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.shortcuts import render
+
+    today = timezone.now().date()
+    week_ago = today - timedelta(days=7)
+
     total_cheptel = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
+    mortalite_today = SortiePoules.objects.filter(date=today, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+    mortalite_week = SortiePoules.objects.filter(date__gte=week_ago, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+
     try:
-        recettes = Vente.objects.aggregate(total=Sum('montant_total'))['total'] or 0
-        depenses = Depense.objects.aggregate(total=Sum('montant'))['total'] or 0
+        total_recettes = Vente.objects.aggregate(total=Sum('montant_total'))['total'] or 0
+        total_depenses = Depense.objects.aggregate(total=Sum('montant'))['total'] or 0
     except:
-        recettes = depenses = 0
-        
+        total_recettes = 0
+        try: total_depenses = Depense.objects.aggregate(total=Sum('montant_total'))['total'] or 0
+        except: total_depenses = 0
+
+    tresorerie = total_recettes - total_depenses
+    alerte_mortalite = mortalite_week > (total_cheptel * 0.02) if total_cheptel > 0 else False
+    alerte_tresorerie = tresorerie < 0
+
+    # 📜 Activité Récente (mix Ventes + Mortalités)
+    activites = []
+    try:
+        for v in Vente.objects.order_by('-date')[:3]:
+            activites.append({'date': v.date, 'type': '💰 Vente', 'detail': f"{v.type_vente} - {v.montant_total:,.0f} F", 'info': v.client or 'N/A'})
+        for m in SortiePoules.objects.filter(type_sortie='mortalite').order_by('-date')[:2]:
+            activites.append({'date': m.date, 'type': '💀 Mortalité', 'detail': f"{m.nombre} sujets", 'info': 'Cheptel'})
+        activites.sort(key=lambda x: x['date'], reverse=True)
+        activites = activites[:5]
+    except:
+        activites = []
+
     return render(request, 'gestion/dashboard.html', {
-        'total_cheptel': total_cheptel,
-        'tresorerie': recettes - depenses,
+        'total_cheptel': total_cheptel, 'mortalite_today': mortalite_today,
+        'mortalite_week': mortalite_week, 'tresorerie': tresorerie,
+        'alerte_mortalite': alerte_mortalite, 'alerte_tresorerie': alerte_tresorerie,
+        'activites_recentes': activites
     })
 
 
@@ -215,7 +244,7 @@ def mortalite_form(request):
 
 @login_required
 def dashboard(request):
-    """Dashboard: KPIs + Actions (Étapes 1 & 2)"""
+    """Dashboard: KPIs + Actions + Activité Récente"""
     from .models import Poulailler, Vente, Depense, SortiePoules
     from django.db.models import Sum
     from django.utils import timezone
@@ -241,11 +270,22 @@ def dashboard(request):
     alerte_mortalite = mortalite_week > (total_cheptel * 0.02) if total_cheptel > 0 else False
     alerte_tresorerie = tresorerie < 0
 
+    # 📜 Activité Récente (mix Ventes + Mortalités)
+    activites = []
+    try:
+        for v in Vente.objects.order_by('-date')[:3]:
+            activites.append({'date': v.date, 'type': '💰 Vente', 'detail': f"{v.type_vente} - {v.montant_total:,.0f} F", 'info': v.client or 'N/A'})
+        for m in SortiePoules.objects.filter(type_sortie='mortalite').order_by('-date')[:2]:
+            activites.append({'date': m.date, 'type': '💀 Mortalité', 'detail': f"{m.nombre} sujets", 'info': 'Cheptel'})
+        activites.sort(key=lambda x: x['date'], reverse=True)
+        activites = activites[:5]
+    except:
+        activites = []
+
     return render(request, 'gestion/dashboard.html', {
-        'total_cheptel': total_cheptel,
-        'mortalite_today': mortalite_today,
-        'mortalite_week': mortalite_week,
-        'tresorerie': tresorerie,
-        'alerte_mortalite': alerte_mortalite,
-        'alerte_tresorerie': alerte_tresorerie,
+        'total_cheptel': total_cheptel, 'mortalite_today': mortalite_today,
+        'mortalite_week': mortalite_week, 'tresorerie': tresorerie,
+        'alerte_mortalite': alerte_mortalite, 'alerte_tresorerie': alerte_tresorerie,
+        'activites_recentes': activites
     })
+
