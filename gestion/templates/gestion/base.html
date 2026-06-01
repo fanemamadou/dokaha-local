@@ -3,27 +3,83 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DOKAHA - Tropic Volaille</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root { --primary:#0d6efd; --success:#198754; --danger:#dc3545; --warning:#ffc107; }
+        body { background:#f8f9fa; font-family:system-ui,-apple-system,sans-serif; padding-bottom:60px; }
+        .navbar-brand { font-weight:700; }
+        .nav-link { font-weight:500; padding:0.5rem 1rem; }
+        .nav-link.active { border-bottom:2px solid var(--primary); }
+        .btn { min-height:44px; } /* Zone tactile minimum */
+        .alert { border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+        @media (max-width:768px) {
+            .navbar-collapse { background:#212529; padding:1rem; border-radius:0 0 8px 8px; }
+            .dropdown-menu { position:static; float:none; width:100%; border:none; box-shadow:none; }
+        }
+    </style>
 </head>
-<body class="bg-light">
-    <nav class="navbar navbar-dark bg-dark mb-4">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold" href="/dashboard/">🐔 DOKAHA</a>
-            {% if user.is_authenticated %}
-            <span class="navbar-text text-light">{{ user.username }} | <a href="/admin/logout/" class="text-warning">Quitter</a></span>
-            {% endif %}
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'dashboard' %}">🐔 DOKAHA</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Accueil</a></li>
+                <li class="nav-item"><a class="nav-link {% if 'mortalite' in request.path %}active{% endif %}" href="{% url 'mortalite_form' %}"><i class="bi bi-shield-exclamation"></i> Mortalité</a></li>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle {% if 'vente' in request.path %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown"><i class="bi bi-cart-check"></i> Ventes</a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'vente_oeufs' %}">🥚 Œufs</a></li>
+                        <li><a class="dropdown-item" href="{% url 'vente_poulets' %}">🐔 Poulets</a></li>
+                        <li><a class="dropdown-item" href="{% url 'vente_autres' %}">📦 Autres</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'credits_list' %}">🔔 Crédits</a></li>
+                    </ul>
+                </li>
+                <li class="nav-item"><a class="nav-link {% if 'finance' in request.path %}active{% endif %}" href="{% url 'finance_dashboard' %}"><i class="bi bi-graph-up"></i> Finance</a></li>
+                <li class="nav-item"><a class="nav-link {% if 'collecte' in request.path %}active{% endif %}" href="{% url 'collecte_oeufs' %}"><i class="bi bi-box-seam"></i> Collecte</a></li>
+            </ul>
+            <span class="navbar-text text-light me-3"><i class="bi bi-person-circle"></i> {{ user.username|default:"Admin" }}</span>
+            <a href="/admin/logout/" class="btn btn-sm btn-outline-danger">Quitter</a>
         </div>
-    </nav>
-    <div class="container">
-        {% if messages %}
-            {% for m in messages %}
-            <div class="alert alert-{{ m.tags }} alert-dismissible fade show">{{ m }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
-            {% endfor %}
-        {% endif %}
-        {% block content %}{% endblock %}
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</nav>
+
+<div class="container-fluid px-3 py-3">
+    {% if messages %}
+    <div class="position-fixed top-0 end-0 p-2 p-md-3" style="z-index:1050; max-width:100%;">
+        {% for m in messages %}
+        <div class="alert alert-{{ m.tags }} alert-dismissible fade show mb-2 shadow-sm" role="alert" style="min-width:280px; max-width:95vw;">
+            {{ m }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+</div>
+
+<footer class="fixed-bottom text-center text-muted py-2 bg-white border-top">
+    <small>© {% now "Y" %} Tropic Volaille 🇨🇮 | DOKAHA</small>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Auto-dismiss messages après 4s (mais reste accessible si l'utilisateur interagit)
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.alert').forEach(function(alert) {
+        setTimeout(function() {
+            var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
+            bsAlert.close();
+        }, 4000);
+    });
+});
+</script>
 </body>
 </html>

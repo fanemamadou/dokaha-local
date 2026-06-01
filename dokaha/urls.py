@@ -19,4 +19,9 @@ urlpatterns = [
     path('credits/<int:vente_id>/paiement/', views.credits_paiement_partiel, name='credits_paiement'),
     path('finance/', views.finance_dashboard, name='finance_dashboard'),
     path('finance/export-excel/', views.finance_export_excel, name='finance_export_excel'),
+    path('cheptel/', views.cheptel, name='cheptel'),
+    path('depense/add/', views.dashboard, name='depense_add'),
+    path('sante/', views.dashboard, name='sante'),
+    path('rapport-jour/', views.dashboard, name='rapport_jour'),
+    path('terrain/', views.terrain, name='terrain'),
 ]

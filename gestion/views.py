@@ -480,3 +480,74 @@ def finance_export_excel(request):
     response['Content-Disposition'] = f'attachment; filename=Tropic_Finance_{datetime.now().strftime("%Y%m%d")}.xlsx'
     wb.save(response)
     return response
+
+
+@login_required
+def cheptel(request):
+    """Vue terrain : effectif réel par poulailler"""
+    from .models import Poulailler, SortiePoules, Vente
+    from django.db.models import Sum
+    from django.shortcuts import render
+    
+    poulaillers = []
+    for p in Poulailler.objects.all():
+        effectif = p.effectif_initial or 0
+        mortalite = SortiePoules.objects.filter(poulailler=p, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+        ventes = Vente.objects.filter(poulailler=p, type_vente='poulets').aggregate(total=Sum('unites'))['total'] or 0
+        effectif_reel = max(0, effectif - mortalite - int(ventes or 0))
+        poulaillers.append({'nom': p.nom, 'initial': effectif, 'mortalite': int(mortalite or 0), 'vendus': int(ventes or 0), 'reel': effectif_reel, 'alerte': effectif_reel < (effectif * 0.8) if effectif > 0 else False})
+    
+    return render(request, 'gestion/cheptel.html', {'poulaillers': poulaillers, 'total_reel': sum(p['reel'] for p in poulaillers)})
+
+@login_required
+def terrain(request):
+    """Interface terrain pour Flatie"""
+    from .models import Poulailler, Vente, Depense, SortiePoules
+    from django.db.models import Sum
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.shortcuts import render
+
+    today = timezone.now().date()
+    week_ago = today - timedelta(days=7)
+    total_cheptel = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
+    mortalite_week = SortiePoules.objects.filter(date__gte=week_ago, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+    
+    try:
+        tr = Vente.objects.aggregate(t=Sum('montant_total'))['t'] or 0
+        td = Depense.objects.aggregate(t=Sum('montant'))['t'] or 0
+    except: tr = td = 0
+    
+    alerte_mortalite = mortalite_week > (total_cheptel * 0.02) if total_cheptel > 0 else False
+    alerte_tresorerie = (tr - td) < 0
+    
+    activites = []
+    try:
+        for v in Vente.objects.order_by('-date')[:3]:
+            activites.append({'date': v.date, 'type': 'Vente', 'detail': f"{v.type_vente} - {int(v.montant_total or 0)} F"})
+        for m in SortiePoules.objects.filter(type_sortie='mortalite').order_by('-date')[:2]:
+            activites.append({'date': m.date, 'type': 'Mortalité', 'detail': f"{int(m.nombre or 0)} sujets"})
+        activites.sort(key=lambda x: x['date'] or today, reverse=True)
+    except: pass
+    
+    return render(request, 'gestion/terrain.html', {
+        'total_cheptel': total_cheptel, 'alerte_mortalite': alerte_mortalite,
+        'alerte_tresorerie': alerte_tresorerie, 'activites_recentes': activites[:5]
+    })
+
+@login_required
+def cheptel(request):
+    """Vue terrain : effectif réel par poulailler"""
+    from .models import Poulailler, SortiePoules, Vente
+    from django.db.models import Sum
+    from django.shortcuts import render
+    
+    poulaillers = []
+    for p in Poulailler.objects.all():
+        effectif = p.effectif_initial or 0
+        mort = SortiePoules.objects.filter(poulailler=p, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+        vend = Vente.objects.filter(poulailler=p, type_vente='poulets').aggregate(total=Sum('unites'))['total'] or 0
+        reel = max(0, effectif - mort - int(vend or 0))
+        poulaillers.append({'nom': p.nom, 'initial': effectif, 'mortalite': int(mort or 0), 'vendus': int(vend or 0), 'reel': reel, 'alerte': reel < (effectif * 0.8) if effectif > 0 else False})
+    
+    return render(request, 'gestion/cheptel.html', {'poulaillers': poulaillers, 'total_reel': sum(p['reel'] for p in poulaillers)})

@@ -1,118 +1,43 @@
 {% extends "gestion/base.html" %}
 {% block content %}
-<div class="container-fluid px-4 mt-4">
-    <h2 class="mb-3 fw-bold text-primary">🏠 Tableau de Bord Principal</h2>
-
-    <!-- 🚨 ALERTES PROACTIVES -->
-    {% if alerte_tresorerie %}
-    <div class="alert alert-danger d-flex align-items-center shadow-sm mb-3" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
-        <div>
-            <strong>⚠️ Attention : Trésorerie Négative !</strong><br>
-            <small>Les dépenses dépassent les recettes. Pensez à relancer les crédits en attente.</small>
-        </div>
-        <a href="/credits/" class="btn btn-sm btn-danger ms-auto">Voir Crédits</a>
-    </div>
-    {% endif %}
-
-    {% if alerte_mortalite %}
-    <div class="alert alert-warning d-flex align-items-center shadow-sm mb-3" role="alert">
-        <i class="bi bi-heart-pulse-fill me-2 fs-4"></i>
-        <div>
-            <strong>⚠️ Alerte Sanitaire :</strong> Mortalité élevée cette semaine ({{ mortalite_week }} sujets).<br>
-            <small>Surveillez vos poulaillers et vérifiez les traitements.</small>
-        </div>
-        <a href="/mortalite/ajouter/" class="btn btn-sm btn-warning ms-auto">Saisir</a>
-    </div>
-    {% endif %}
-
-
-    <div class="row g-3 mb-4">
-        <div class="col-md-3 col-sm-6">
-            <div class="card border-start border-4 border-primary shadow-sm h-100">
-                <div class="card-body">
-                    <h6 class="text-muted text-uppercase mb-1">Cheptel Total</h6>
-                    <h3 class="fw-bold mb-0">{{ total_cheptel }} 🐔</h3>
-                    <small class="text-success">Poules actives</small>
-                </div>
+<div class="container-fluid px-2 px-md-4 mt-2 mt-md-4">
+    <div class="row g-2 mb-3">
+        <div class="col-6">
+            <div class="card bg-primary text-white p-2 text-center shadow-sm">
+                <small>🐔 CHEPTEL ACTUEL</small>
+                <h3 class="fw-bold mb-0">{{ total_cheptel|default:0 }}</h3>
             </div>
         </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="card border-start border-4 {% if mortalite_today > 0 %}border-danger{% else %}border-success{% endif %} shadow-sm h-100">
-                <div class="card-body">
-                    <h6 class="text-muted text-uppercase mb-1">Mortalité Aujourd'hui</h6>
-                    <h3 class="fw-bold mb-0">{{ mortalite_today }}</h3>
-                    <small class="{% if mortalite_week > 0 %}text-danger{% else %}text-muted{% endif %}">{{ mortalite_week }} sur 7 jours</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="card border-start border-4 {% if alerte_tresorerie %}border-warning{% else %}border-success{% endif %} shadow-sm h-100">
-                <div class="card-body">
-                    <h6 class="text-muted text-uppercase mb-1">Trésorerie</h6>
-                    <h3 class="fw-bold mb-0">{{ tresorerie|floatformat:0 }} F</h3>
-                    <small class="text-muted">Recettes - Dépenses</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 col-sm-6">
-            <div class="card border-start border-4 {% if alerte_mortalite %}border-warning{% else %}border-info{% endif %} shadow-sm h-100">
-                <div class="card-body">
-                    <h6 class="text-muted text-uppercase mb-1">État Santé</h6>
-                    <h3 class="fw-bold mb-0">{% if alerte_mortalite %}⚠️ Alerte{% else %}✅ Stable{% endif %}</h3>
-                    <small class="text-muted">Seuil 2% / 7j</small>
-                </div>
+        <div class="col-6">
+            <div class="card bg-danger text-white p-2 text-center shadow-sm">
+                <small>⚠️ ALERTES</small>
+                <h3 class="fw-bold mb-0">{% if alerte_mortalite or alerte_tresorerie %}2{% else %}0{% endif %}</h3>
             </div>
         </div>
     </div>
-</div>
-
-    <!-- ⚡ ACTIONS RAPIDES -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white fw-bold">⚡ Actions Rapides</div>
-        <div class="card-body">
-            <div class="row g-2">
-                <div class="col-md-3 col-6"><a href="/mortalite/ajouter/" class="btn btn-outline-danger w-100 py-2">💀 Mortalité</a></div>
-                <div class="col-md-3 col-6"><a href="/collecte/" class="btn btn-outline-warning w-100 py-2">🥚 Collecte Œufs</a></div>
-                <div class="col-md-3 col-6">
-    <div class="card h-100 border-success shadow-sm">
-        <div class="card-header bg-success text-white py-1 text-center small fw-bold">💰 Ventes</div>
-        <div class="card-body p-2 d-grid gap-1">
-            <a href="/vente/oeufs/" class="btn btn-sm btn-outline-success py-1">🥚 Œufs</a>
-            <a href="/vente/poulets/" class="btn btn-sm btn-outline-success py-1">🐔 Poulets</a>
-            <a href="/vente/autres/" class="btn btn-sm btn-outline-success py-1">📦 Autres</a>
-        </div>
+    <div class="row g-2 g-md-3">
+        <div class="col-6 col-md-3"><a href="/mortalite/ajouter/" class="btn btn-danger w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">💀</span><span class="fw-bold">MORTALITÉ</span><small class="opacity-75">Saisir pertes</small></a></div>
+        <div class="col-6 col-md-3"><a href="/collecte/" class="btn btn-warning w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-dark"><span class="fs-1 mb-1">🥚</span><span class="fw-bold">COLLECTE</span><small class="opacity-75">ufs du jour</small></a></div>
+        <div class="col-6 col-md-3"><a href="/vente/oeufs/" class="btn btn-success w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1"></span><span class="fw-bold">VENTE</span><small class="opacity-75">Enregistrer</small></a></div>
+        <div class="col-6 col-md-3"><a href="/stock/" class="btn btn-info w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">📦</span><span class="fw-bold">STOCK</span><small class="opacity-75">Aliments/Vaccins</small></a></div>
+        <div class="col-6 col-md-3"><a href="/cheptel/" class="btn btn-primary w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">🐔</span><span class="fw-bold">CHEPTEL</span><small class="opacity-75">Effectif réel</small></a></div>
+        <div class="col-6 col-md-3"><a href="/depense/add/" class="btn btn-dark w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">💸</span><span class="fw-bold">DÉPENSES</span><small class="opacity-75">Achat/Transport</small></a></div>
+        <div class="col-6 col-md-3"><a href="/sante/" class="btn btn-secondary w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">🩺</span><span class="fw-bold">SANTÉ</span><small class="opacity-75">Vaccins/Soins</small></a></div>
+        <div class="col-6 col-md-3"><a href="/rapport-jour/" class="btn btn-outline-primary w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center"><span class="fs-1 mb-1">📊</span><span class="fw-bold">RAPPORT</span><small class="text-muted">Récap journée</small></a></div>
     </div>
-</div>
-                <div class="col-md-3 col-6"><a href="/credits/" class="btn btn-outline-info w-100 py-2">🔔 Crédits</a></div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- 📜 ACTIVITÉ RÉCENTE -->
-    <div class="card shadow-sm mb-4">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-bold">📜 Activité Récente</h5>
-            <small class="text-muted">5 dernières saisies</small>
-        </div>
+    <div class="card shadow-sm mt-3 mb-4">
+        <div class="card-header bg-white fw-bold">🕒 Dernières Saisies</div>
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light"><tr><th>Date</th><th>Type</th><th>Détail</th><th>Info</th></tr></thead>
+            <table class="table table-sm table-hover mb-0">
                 <tbody>
                     {% for a in activites_recentes %}
-                    <tr>
-                        <td>{{ a.date|date:"d/m/Y" }}</td>
-                        <td><span class="badge {% if 'Vente' in a.type %}bg-success{% else %}bg-danger{% endif %}">{{ a.type }}</span></td>
-                        <td>{{ a.detail }}</td>
-                        <td class="text-muted small">{{ a.info }}</td>
-                    </tr>
+                    <tr><td class="small text-muted">{{ a.date|date:"d/m/Y" }}</td><td class="fw-bold">{{ a.type }}</td><td class="small">{{ a.detail }}</td></tr>
                     {% empty %}
-                    <tr><td colspan="4" class="text-center py-3 text-muted">Aucune activité enregistrée</td></tr>
+                    <tr><td colspan="3" class="text-center py-3 text-muted">Aucune saisie aujourd'hui</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
     </div>
-
+</div>
 {% endblock %}
