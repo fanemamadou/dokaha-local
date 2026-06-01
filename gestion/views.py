@@ -605,3 +605,37 @@ def depense_add(request):
         'categories': categories,
         'poulaillers': poulaillers
     })
+
+@login_required
+def sante_form(request):
+    from .models import Poulailler, SanteRecord
+    from django.contrib import messages
+    from django.shortcuts import redirect, render
+    from django.utils import timezone
+
+    poulaillers = Poulailler.objects.all()
+    if request.method == 'POST':
+        type_dep = request.POST.get('type_depense', 'generale')
+        type_sante = request.POST.get('type_sante', '').strip()
+        produit = request.POST.get('produit', '').strip()
+        cout_str = request.POST.get('cout', '').replace(' ', '').replace(',', '')
+        note = request.POST.get('note', '').strip()
+        try: cout = float(cout_str) if cout_str else 0
+        except: cout = 0
+
+        if not type_sante:
+            messages.error(request, "❌ Choisis un type d'intervention.")
+        else:
+            p_obj = None
+            if type_dep == 'unique':
+                p_id = request.POST.get('poulailler_id')
+                if p_id: p_obj = Poulailler.objects.get(id=p_id)
+            elif type_dep == 'partagee':
+                p_ids = request.POST.getlist('poulaillers_partages')
+                noms = [Poulailler.objects.get(id=pid).nom for pid in p_ids]
+                note = f"[Partagée: {', '.join(noms)}] {note}"
+
+            SanteRecord.objects.create(date=timezone.now().date(), poulailler=p_obj, type_sante=type_sante, produit=produit, cout=cout, note=note)
+            messages.success(request, f"✅ Santé enregistrée ({produit}).")
+            return redirect('terrain')
+    return render(request, 'gestion/sante_form.html', {'poulaillers': poulaillers})

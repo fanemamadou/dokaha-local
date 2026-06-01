@@ -206,3 +206,13 @@ class AlertesStock(models.Model):
         verbose_name = "Alerte stock"
         ordering = ['-date_alerte']
     def __str__(self): return f"{self.categorie.nom} - {self.niveau}"
+
+class SanteRecord(models.Model):
+    """Suivi santé terrain"""
+    date = models.DateField()
+    poulailler = models.ForeignKey('gestion.Poulailler', on_delete=models.SET_NULL, null=True, blank=True)
+    type_sante = models.CharField(max_length=50, choices=[('vaccin', 'Vaccin'), ('traitement', 'Traitement'), ('vet', 'Vétérinaire')])
+    produit = models.CharField(max_length=100, blank=True)
+    cout = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    note = models.TextField(blank=True)
+    def __str__(self): return f"{self.date} - {self.type_sante}"

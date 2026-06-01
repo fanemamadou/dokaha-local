@@ -21,7 +21,7 @@ urlpatterns = [
     path('finance/export-excel/', views.finance_export_excel, name='finance_export_excel'),
     path('cheptel/', views.cheptel, name='cheptel'),
     path('depense/add/', views.depense_add, name='depense_add'),
-    path('sante/', views.dashboard, name='sante'),
+    path('sante/', views.sante_form, name='sante'),
     path('rapport-jour/', views.dashboard, name='rapport_jour'),
     path('terrain/', views.terrain, name='terrain'),
 ]
