@@ -551,3 +551,52 @@ def cheptel(request):
         poulaillers.append({'nom': p.nom, 'initial': effectif, 'mortalite': int(mort or 0), 'vendus': int(vend or 0), 'reel': reel, 'alerte': reel < (effectif * 0.8) if effectif > 0 else False})
     
     return render(request, 'gestion/cheptel.html', {'poulaillers': poulaillers, 'total_reel': sum(p['reel'] for p in poulaillers)})
+
+@login_required
+def depense_add(request):
+    """Formulaire terrain : dépenses générales, 1 poulailler ou partagées"""
+    from .models import Depense, Poulailler
+    from django.contrib import messages
+    from django.shortcuts import redirect, render
+    from django.utils import timezone
+
+    poulaillers = Poulailler.objects.all()
+    categories = ['Aliment', 'Transport', "Main d'œuvre", 'Vaccin/Soin', 'Eau/Électricité', 'Matériel', 'Autre']
+
+    if request.method == 'POST':
+        type_dep = request.POST.get('type_depense', 'generale')
+        categorie = request.POST.get('categorie', '').strip()
+        montant_str = request.POST.get('montant', '').replace(' ', '').replace(',', '.')
+        description = request.POST.get('description', '').strip()
+        
+        try: montant = float(montant_str) if montant_str else 0
+        except ValueError: montant = 0
+
+        if not categorie or montant <= 0:
+            messages.error(request, "❌ Catégorie et montant obligatoires.")
+        else:
+            # Construction de la description selon le type
+            if type_dep == 'unique':
+                p_id = request.POST.get('poulailler_id')
+                p = Poulailler.objects.get(id=p_id) if p_id else None
+                desc = f"[{p.nom}] {description}" if p else description
+            elif type_dep == 'partagee':
+                p_ids = request.POST.getlist('poulaillers_partages')
+                noms = [Poulailler.objects.get(id=pid).nom for pid in p_ids]
+                desc = f"[Partagée: {', '.join(noms)}] {description}"
+            else:
+                desc = f"[Générale] {description}"
+
+            Depense.objects.create(
+                date=timezone.now().date(),
+                categorie=categorie,
+                description=desc,
+                montant=montant
+            )
+            messages.success(request, f"✅ Dépense de {int(montant)} F enregistrée.")
+            return redirect('terrain')
+
+    return render(request, 'gestion/depense_form.html', {
+        'categories': categories,
+        'poulaillers': poulaillers
+    })
