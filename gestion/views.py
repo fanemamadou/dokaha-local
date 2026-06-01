@@ -230,61 +230,51 @@ def stock_dashboard(request):
 
 # 🥚 VUE COLLECTE ŒUFS (DUAL MODE + SYNC STOCK)
 
+
+
+
+
+
 @login_required
 def collecte_oeufs(request):
-    """Formulaire terrain : collecte œufs (plateaux + vrac)"""
-    from .models import Poulailler
+    """Collecte terrain : poulailler + stock sain + cassés"""
     from django.contrib import messages
     from django.shortcuts import redirect, render
     from django.utils import timezone
+    from .models import Poulailler
 
     poulaillers = Poulailler.objects.all()
     
     if request.method == 'POST':
-        type_imp = request.POST.get('type_imp', 'unique')
+        p_id = request.POST.get('poulailler_id')
         date_coll = request.POST.get('date', timezone.now().date())
         
-        # Nettoyage format CI
-        def clean_int(val):
-            try: return int(str(val).replace(' ', '').replace(',', ''))
-            except: return 0
+        try:
+            plt = int(request.POST.get('plateaux', 0) or 0)
+            vrac = int(request.POST.get('oeufs_vrac', 0) or 0)
+            total = int(request.POST.get('total_oeufs', 0) or 0)
+            casses = int(request.POST.get('oeufs_casses', 0) or 0)
+        except: plt = vrac = total = casses = 0
         
-        plt = clean_int(request.POST.get('plateaux', 0))
-        vrac = clean_int(request.POST.get('oeufs_vrac', 0))
-        total = plt * 30 + vrac  # 1 plateau = 30 œufs standard
-        
-        if plt == 0 and vrac == 0:
-            messages.error(request, "❌ Saisis au moins un plateau ou un œuf.")
+        if not p_id:
+            messages.error(request, "❌ Choisis le poulailler.")
+        elif total == 0 and casses == 0:
+            messages.error(request, "❌ Entre au moins un œuf (sain ou cassé).")
         else:
-            # Gestion poulailler
-            if type_imp == 'unique':
-                p_id = request.POST.get('poulailler_id')
-                if p_id:
-                    from .models import Collecte
-                    Collecte.objects.create(
-                        date=date_coll, poulailler_id=p_id,
-                        plateaux=plt, oeufs_unites=vrac, total_oeufs=total
-                    )
-                    messages.success(request, f"✅ Collecte: {plt} plt + {vrac} = {total} œufs")
-                    return redirect('terrain')
-            elif type_imp == 'partagee':
-                p_ids = request.POST.getlist('poulaillers_partages')
-                if p_ids:
-                    from .models import Collecte
-                    # Répartition égale ou création multiple
-                    for pid in p_ids:
-                        Collecte.objects.create(
-                            date=date_coll, poulailler_id=pid,
-                            plateaux=plt, oeufs_unites=vrac, total_oeufs=total
-                        )
-                    messages.success(request, f"✅ Collecte partagée: {total} œufs")
-                    return redirect('terrain')
-            else:
-                # Générale : on crée pour tous les poulaillers ou on utilise un record global
-                messages.success(request, f"✅ Collecte générale: {total} œufs")
-                return redirect('terrain')
-
-    return render(request, 'gestion/collecte_form.html', {'poulaillers': poulaillers})
+            try:
+                from .models import Collecte
+                Collecte.objects.create(
+                    date=date_coll, poulailler_id=p_id,
+                    plateaux=plt, oeufs_unites=vrac, total_oeufs=total,
+                    oeufs_casses=casses
+                )
+                msg = f"✅ Sains: {total} | 💔 Cassés: {casses}"
+                messages.success(request, msg)
+            except Exception as e:
+                messages.error(request, f"⚠️ {e}")
+            return redirect('terrain')
+    
+    return render(request, 'gestion/collecte_form.html', {'poulaillers': poulaillers, 'today': timezone.now()})
 
 
 @login_required

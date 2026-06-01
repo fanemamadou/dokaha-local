@@ -216,3 +216,18 @@ class SanteRecord(models.Model):
     cout = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     note = models.TextField(blank=True)
     def __str__(self): return f"{self.date} - {self.type_sante}"
+
+class Collecte(models.Model):
+    """Collecte quotidienne d'œufs"""
+    date = models.DateField()
+    plateaux = models.IntegerField(default=0)
+    oeufs_unites = models.IntegerField(default=0)
+    total_oeufs = models.IntegerField(default=0)
+    
+    def __str__(self):
+        return f"{self.date}: {self.total_oeufs} œufs"
+    
+    class Meta:
+        ordering = ['-date']
+        verbose_name = "Collecte"
+        verbose_name_plural = "Collectes"
