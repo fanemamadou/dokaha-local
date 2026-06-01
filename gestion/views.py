@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect
+from datetime import datetime
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db.models import Sum, Q, F
@@ -424,3 +425,58 @@ def credits_paiement_partiel(request, vente_id):
 
     return render(request, 'gestion/credits_paiement.html', {'vente': vente})
 
+
+@login_required
+def finance_dashboard(request):
+    from .models import Vente, Depense
+    from django.db.models import Sum
+    start, end = request.GET.get('start'), request.GET.get('end')
+    qs_v, qs_d = Vente.objects.all(), Depense.objects.all()
+    if start and end: qs_v, qs_d = qs_v.filter(date__range=[start, end]), qs_d.filter(date__range=[start, end])
+    elif start: qs_v, qs_d = qs_v.filter(date__gte=start), qs_d.filter(date__gte=start)
+    elif end: qs_v, qs_d = qs_v.filter(date__lte=end), qs_d.filter(date__lte=end)
+    
+    tr = int(qs_v.aggregate(t=Sum('montant_total'))['t'] or 0)
+    td = int(qs_d.aggregate(t=Sum('montant'))['t'] or 0)
+    
+    labels, data = [], []
+    for item in qs_v.values('type_vente').annotate(t=Sum('montant_total')).order_by('type_vente'):
+        labels.append(item['type_vente']); data.append(int(item['t'] or 0))
+        
+    return render(request, 'gestion/finance_dashboard.html', {
+        'total_recettes': tr, 'total_depenses': td, 'tresorerie': tr - td,
+        'start_date': start or '', 'end_date': end or '',
+        'chart_labels': labels, 'chart_data': data
+    })
+
+@login_required
+def finance_export_excel(request):
+    from .models import Vente, Depense
+    from django.http import HttpResponse
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment
+    from openpyxl.utils import get_column_letter
+    
+    wb = openpyxl.Workbook()
+    ws_r = wb.active; ws_r.title = "Recettes"
+    ws_r.append(["Date", "Client", "Type", "Qté", "Prix", "Total", "Payé", "Reste"])
+    for c in ws_r[1]: c.font = Font(bold=True); c.fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    for v in Vente.objects.order_by('-date'):
+        ws_r.append([v.date.strftime("%d/%m/%Y") if v.date else "", v.client or "", v.type_vente or "", int(v.unites or 0), int(v.prix_plateau or 0), int(v.montant_total or 0), int(v.montant_paye or 0), int(v.montant_restant or 0)])
+    
+    ws_d = wb.create_sheet("Dépenses")
+    ws_d.append(["Date", "Catégorie", "Description", "Montant"])
+    for c in ws_d[1]: c.font = Font(bold=True)
+    for d in Depense.objects.order_by('-date'):
+        ws_d.append([d.date.strftime("%d/%m/%Y") if d.date else "", d.categorie or "", d.description or "", int(d.montant or 0)])
+        
+    ws_rc = wb.create_sheet("Récap")
+    ws_rc.append(["INDICATEUR", "VALEUR"]); ws_rc['A1'].font = Font(bold=True)
+    tr = int(Vente.objects.aggregate(t=Sum('montant_total'))['t'] or 0)
+    td = int(Depense.objects.aggregate(t=Sum('montant'))['t'] or 0)
+    ws_rc.append(["Total Recettes", tr]); ws_rc.append(["Total Dépenses", td]); ws_rc.append(["Trésorerie", tr-td])
+    
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=Tropic_Finance_{datetime.now().strftime("%Y%m%d")}.xlsx'
+    wb.save(response)
+    return response

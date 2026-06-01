@@ -17,4 +17,6 @@ urlpatterns = [
     path('credits/<int:vente_id>/relance/', views.credits_relance, name='credits_relance'),
     path('credits/<int:vente_id>/payer/', views.credits_payer, name='credits_payer'),
     path('credits/<int:vente_id>/paiement/', views.credits_paiement_partiel, name='credits_paiement'),
+    path('finance/', views.finance_dashboard, name='finance_dashboard'),
+    path('finance/export-excel/', views.finance_export_excel, name='finance_export_excel'),
 ]
