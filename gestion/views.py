@@ -348,3 +348,79 @@ def dashboard(request):
         'activites_recentes': activites
     })
 
+
+@login_required
+def credits_list(request):
+    """Liste des créances clients impayées"""
+    from .models import Vente
+    from django.db.models import Sum
+    from django.shortcuts import render
+    creances = Vente.objects.filter(paye=False, montant_restant__gt=0).order_by('-date')
+    total = creances.aggregate(total=Sum('montant_restant'))['total'] or 0
+    return render(request, 'gestion/credits_list.html', {'creances': creances, 'total_credits': total})
+
+@login_required
+def credits_relance(request, vente_id):
+    """Générer un message de relance pour un client"""
+    from .models import Vente
+    from django.shortcuts import get_object_or_404, render
+    vente = get_object_or_404(Vente, pk=vente_id)
+    msg = (f"Bonjour {vente.client},\n"
+           f"Concernant votre achat du {vente.date.strftime('%d/%m/%Y')}:\n"
+           f"📦 Total: {vente.montant_total:,.0f} FCFA | ✅ Déjà versé: {vente.montant_paye or 0:,.0f} FCFA\n"
+           f"⚠️ *Reste à payer: {vente.montant_restant:,.0f} FCFA*\n\n"
+           f"Merci de régulariser dans les meilleurs délais.\nCordialement, Dg Tropic 🇨🇮")
+    return render(request, 'gestion/credits_relance.html', {'vente': vente, 'message': msg})
+
+@login_required
+def credits_payer(request, vente_id):
+    """Marquer une créance comme réglée"""
+    from .models import Vente
+    from django.shortcuts import get_object_or_404, redirect
+    from django.contrib import messages
+    vente = get_object_or_404(Vente, pk=vente_id)
+    vente.paye = True
+    vente.montant_restant = 0
+    vente.save()
+    messages.success(request, f"✅ Créance de {vente.montant_total:,.0f} FCFA clôturée.")
+    return redirect('credits_list')
+
+
+@login_required
+def credits_paiement_partiel(request, vente_id):
+    """Gérer un paiement partiel ou total (avec Decimal pour éviter les erreurs)"""
+    from .models import Vente
+    from django.shortcuts import get_object_or_404, redirect, render
+    from django.contrib import messages
+    from decimal import Decimal
+
+    vente = get_object_or_404(Vente, pk=vente_id)
+
+    if request.method == 'POST':
+        montant_str = request.POST.get('montant', '0')
+        try:
+            montant = Decimal(montant_str)
+        except:
+            messages.error(request, "❌ Montant invalide.")
+            return redirect('credits_paiement', vente_id=vente_id)
+
+        if montant <= 0:
+            messages.error(request, "❌ Le montant doit être supérieur à 0.")
+        elif montant > vente.montant_restant:
+            messages.error(request, f"⚠️ Dépasse le reste dû ({vente.montant_restant:,.0f} F).")
+        else:
+            # ✅ Tous les calculs en Decimal
+            vente.montant_paye = (vente.montant_paye or Decimal(0)) + montant
+            vente.montant_restant = vente.montant_restant - montant
+            
+            if vente.montant_restant <= 0:
+                vente.montant_restant = Decimal(0)
+                vente.paye = True
+            vente.save()
+            
+            msg = "✅ Créance totalement réglée !" if vente.paye else f"✅ Acompte de {int(montant)} F enregistré."
+            messages.success(request, f"{msg} Reste: {int(vente.montant_restant)} FCFA")
+            return redirect('credits_list')
+
+    return render(request, 'gestion/credits_paiement.html', {'vente': vente})
+

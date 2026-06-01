@@ -13,4 +13,8 @@ urlpatterns = [
     path('vente/oeufs/', views.vente_form, {'type_vente': 'oeufs'}, name='vente_oeufs'),
     path('vente/poulets/', views.vente_form, {'type_vente': 'poulets'}, name='vente_poulets'),
     path('vente/autres/', views.vente_form, {'type_vente': 'autres'}, name='vente_autres'),
+    path('credits/', views.credits_list, name='credits_list'),
+    path('credits/<int:vente_id>/relance/', views.credits_relance, name='credits_relance'),
+    path('credits/<int:vente_id>/payer/', views.credits_payer, name='credits_payer'),
+    path('credits/<int:vente_id>/paiement/', views.credits_paiement_partiel, name='credits_paiement'),
 ]
