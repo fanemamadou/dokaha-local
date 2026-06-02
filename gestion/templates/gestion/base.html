@@ -30,43 +30,41 @@
 
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'dashboard' %}">🐔 DOKAHA</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="mainNav">
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item"><a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}"><i class="bi bi-house-door"></i> Accueil</a></li>
-                <li class="nav-item"><a class="nav-link {% if 'mortalite' in request.path %}active{% endif %}" href="{% url 'mortalite_form' %}"><i class="bi bi-shield-exclamation"></i> Mortalité</a></li>
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle {% if 'vente' in request.path %}active{% endif %}" href="#" role="button" data-bs-toggle="dropdown"><i class="bi bi-cart-check"></i> Ventes</a>
-                    <ul class="dropdown-menu">
-                        <li><a class="dropdown-item" href="{% url 'vente_oeufs' %}">🥚 Œufs</a></li>
-                        <li><a class="dropdown-item" href="{% url 'vente_poulets' %}">🐔 Poulets</a></li>
-                        <li><a class="dropdown-item" href="{% url 'vente_autres' %}">📦 Autres</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="{% url 'credits_list' %}">🔔 Crédits</a></li>
-                    </ul>
-                </li>
-                <li class="nav-item"><a class="nav-link {% if 'finance' in request.path %}active{% endif %}" href="{% url 'finance_dashboard' %}"><i class="bi bi-graph-up"></i> Finance</a></li>
-                <li class="nav-item"><a class="nav-link {% if 'collecte' in request.path %}active{% endif %}" href="{% url 'collecte_oeufs' %}"><i class="bi bi-box-seam"></i> Collecte</a></li>
-            </ul>
-            <span class="navbar-text text-light me-3"><i class="bi bi-person-circle"></i> {{ user.username|default:"Admin" }}</span>
-            <a href="/admin/logout/" class="btn btn-sm btn-outline-danger">Quitter</a>
-        </div>
+<style>.navbar a, .navbar span, .navbar .nav-link, .navbar .btn { color: #ffffff !important; } .navbar a:hover, .navbar .nav-link:hover { color: #ffc107 !important; }</style>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm py-2">
+  <div class="container-fluid">
+    <a class="navbar-brand fw-bold fs-4" href="/">🐔 DOKAHA</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="mainNavbar">
+      
+      <!-- ZONE 1 : OPÉRATIONS QUOTIDIENNES -->
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        <li class="nav-item"><a class="nav-link" href="/">🏠 Accueil</a></li>
+        <li class="nav-item"><a class="nav-link fw-bold text-warning" href="/dashboard/">📊 Dashboard</a></li>
+        <li class="nav-item"><a class="nav-link" href="/terrain/">📱 Saisie</a></li>
+        <li class="nav-item"><a class="nav-link" href="/vente/"> Ventes</a></li>
+        <li class="nav-item"><a class="nav-link" href="/depenses/">💸 Dépenses</a></li>
+        <li class="nav-item"><a class="nav-link" href="/credits/">📑 Créances</a></li>
+      </ul>
+      
+      <!-- ZONE 2 : ANALYSE & RAPPORTS -->
+      <ul class="navbar-nav mb-2 mb-lg-0 border-start border-secondary ps-lg-3">
+        <li class="nav-item"><a class="nav-link" href="/finance/"> Bilans</a></li>
+        <li class="nav-item"><a class="nav-link" href="/finance/export-excel/">📥 Exports</a></li>
+      </ul>
+      
+      <!-- ZONE 3 : SYSTÈME & UTILISATEUR -->
+      <div class="d-flex align-items-center ms-lg-4">
+        <a href="/admin/" class="btn btn-sm btn-outline-light me-2">⚙️ Admin</a>
+        <span class="text-light small me-3 d-none d-md-inline">{{ user.username|default:"Fanem" }}</span>
+        <a href="/logout/" class="btn btn-sm btn-outline-danger">🚪 Quitter</a>
+      </div>
+      
     </div>
-
-    <div class="d-flex align-items-center ms-auto me-2 gap-2">
-        <a href="/terrain/" class="btn btn-sm btn-warning fw-bold px-3 shadow-sm">📱 Saisie</a>
-        <a href="/dashboard/" class="btn btn-sm btn-info fw-bold px-3 shadow-sm text-white">📊 Dashboard</a>
-        <a href="/ventes/" class="btn btn-sm btn-success fw-bold px-3 shadow-sm">💰 Ventes</a>
-        <a href="/depenses/" class="btn btn-sm btn-danger fw-bold px-3 shadow-sm">💸 Dépenses</a>
-        <a href="/admin/" class="btn btn-sm btn-outline-light fw-bold px-3">⚙️ Admin</a>
-    </div>
-    
-    </nav>
+  </div>
+</nav>
 
 <div class="container-fluid px-3 py-3">
     {% if messages %}

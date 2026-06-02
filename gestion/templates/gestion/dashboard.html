@@ -6,29 +6,19 @@
 .stock-number { font-size: 4rem; font-weight: 800; line-height: 1; }
 .kpi-card { border: none; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.2s; }
 .kpi-card:hover { transform: translateY(-5px); }
-.podium-card { border-radius: 15px; padding: 1.5rem; text-align: center; transition: all 0.3s; }
+.podium-card { border-radius: 15px; padding: 1.5rem; text-align: center; transition: all 0.3s; color: #fff; }
 .podium-card:hover { transform: scale(1.05); }
-.podium-1 { background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); box-shadow: 0 8px 25px rgba(255,215,0,0.4); }
-.podium-2 { background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%); box-shadow: 0 8px 25px rgba(192,192,192,0.4); }
-.podium-3 { background: linear-gradient(135deg, #cd7f32 0%, #e8a87c 100%); box-shadow: 0 8px 25px rgba(205,127,50,0.4); }
+.podium-1 { background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%); box-shadow: 0 8px 25px rgba(255,215,0,0.4); color: #000; }
+.podium-2 { background: linear-gradient(135deg, #c0c0c0 0%, #e8e8e8 100%); box-shadow: 0 8px 25px rgba(192,192,192,0.4); color: #000; }
+.podium-3 { background: linear-gradient(135deg, #cd7f32 0%, #e8a87c 100%); box-shadow: 0 8px 25px rgba(205,127,50,0.4); color: #fff; }
+.podium-4 { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4); color: #fff; }
+.podium-5 { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); box-shadow: 0 8px 25px rgba(67, 233, 123, 0.4); color: #fff; }
 .medaille { font-size: 4rem; display: block; margin-bottom: 0.5rem; }
 .score-badge { background: rgba(255,255,255,0.3); padding: 0.5rem 1rem; border-radius: 50px; font-weight: 700; display: inline-block; margin-top: 0.5rem; }
 .section-title { color: #1e3c72; border-bottom: 3px solid #ffc107; padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
 .alert-box { border-left: 4px solid; border-radius: 8px; padding: 1rem; margin-bottom: 0.8rem; }
 .alert-danger-box { border-color: #dc3545; background: #f8d7da; }
 .alert-warning-box { border-color: #ffc107; background: #fff3cd; }
-
-    .podium-4 { 
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
-        box-shadow: 0 8px 25px rgba(79, 172, 254, 0.4); 
-        color: #fff; 
-    }
-    .podium-5 { 
-        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); 
-        box-shadow: 0 8px 25px rgba(67, 233, 123, 0.4); 
-        color: #fff; 
-    }
-
 </style>
 
 <div class="container-fluid py-4 px-3 px-md-4">
@@ -59,6 +49,32 @@
     </div>
   </div>
 
+  <!-- TAUX DE PONTE GLOBAL -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm p-3 p-md-4 bg-light">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center text-center text-md-start">
+          <div class="mb-2 mb-md-0">
+            <h6 class="text-muted mb-1 fw-bold text-uppercase small">📈 Taux de Ponte Estimé (Aujourd'hui)</h6>
+            <h2 class="fw-bold mb-0 text-primary display-6">
+              {% if collecte_today > 0 %}
+                {% widthratio collecte_today 5000 100 %}%
+              {% else %}
+                0%
+              {% endif %}
+            </h2>
+          </div>
+          <div class="text-md-end">
+            <span class="badge p-2 px-3 fs-6 {% if collecte_today >= 3500 %}bg-success{% elif collecte_today >= 2500 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+              {% if collecte_today >= 3500 %}✅ Excellent{% elif collecte_today >= 2500 %}⚠️ Moyen{% else %}❌ Faible{% endif %}
+            </span>
+            <small class="d-block text-muted mt-2 small">Base de calcul : 5 000 sujets</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ALERTES -->
   {% if alertes %}
   <div class="mb-4">
@@ -69,29 +85,31 @@
   </div>
   {% endif %}
 
-  <!-- PODIUM TOP 3 -->
+  <!-- PODIUM TOP 5 -->
   <h4 class="section-title">🏆 Top 5 des Poulaillers (7 jours)</h4>
   <div class="row g-3 mb-4">
     {% for p in poulaillers|slice:":5" %}
-    <div class="col-md-4">
+    <div class="col-md-4 col-6 mb-3">
       <div class="podium-card podium-{{ forloop.counter }}">
-        <span class="medaille">{% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% elif forloop.counter == 4 %}4️⃣{% else %}5️⃣{% endif %}</span>
+        <span class="medaille">
+          {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% elif forloop.counter == 4 %}4️⃣{% else %}5️⃣{% endif %}
+        </span>
         <h3 class="fw-bold mb-2">{{ p.nom }}</h3>
         <div class="mb-2">
-          <div class="fs-4 fw-bold">{{ p.collecte }} œufs</div>
+          <div class="fs-4 fw-bold">{{ p.collecte_7d }} œufs</div>
           <small>produits cette semaine</small>
         </div>
         <div class="row text-center small mt-3">
           <div class="col-4">
-            <div class="fw-bold">{{ p.mortalite }}</div>
+            <div class="fw-bold">{{ p.mortalite_7d }}</div>
             <div>💀 morts</div>
           </div>
           <div class="col-4">
-            <div class="fw-bold">{{ p.casses }}</div>
+            <div class="fw-bold">{{ p.casses_7d }}</div>
             <div>💔 cassés</div>
           </div>
           <div class="col-4">
-            <div class="fw-bold">{{ p.soins }}</div>
+            <div class="fw-bold">{{ p.soins_7d }}</div>
             <div>🩺 soins</div>
           </div>
         </div>
@@ -102,54 +120,65 @@
   </div>
 
   <!-- TABLEAU COMPLET TOUS POULAILLERS -->
-  <h4 class="section-title">📊 Performance détaillée de TOUS les poulaillers (7 derniers jours)</h4>
+  <h4 class="section-title">📊 Performance détaillée (7 derniers jours + Historique)</h4>
   <div class="card border-0 shadow-sm mb-4">
     <div class="table-responsive">
-      <table class="table table-hover mb-0">
+      <table class="table table-hover mb-0 align-middle">
         <thead class="table-light">
           <tr>
             <th>Rang</th>
             <th>Poulailler</th>
-            <th class="text-center">🥚 ufs</th>
-            <th class="text-center">💔 Cassés</th>
-            <th class="text-center">💀 Morts</th>
-            <th class="text-center">🩺 Soins</th>
-            <th class="text-center">Score</th>
+            <th class="text-center">🥚 7j</th>
+            <th class="text-center d-none d-md-table-cell">📈 Moy/jour</th>
+            <th class="text-center d-none d-md-table-cell">💔 7j</th>
+            <th class="text-center d-none d-md-table-cell">💀 7j</th>
+            <th class="text-center d-none d-lg-table-cell" title="Depuis le début des enregistrements">🏆 Total Historique</th>
+            <th class="text-center" title="Calcul : +1pt/10 œufs, -5pts/mort, -2pts/cassé" style="cursor: help;">🏆 Score <span class="small text-muted">ℹ️</span></th>
           </tr>
         </thead>
         <tbody>
           {% for p in poulaillers %}
           <tr class="{% if forloop.counter == 1 %}table-warning{% elif forloop.counter == 2 %}table-light{% elif forloop.counter == 3 %}table-active{% endif %}">
             <td class="fw-bold fs-5">
-              {% if forloop.counter == 1 %}🥇
-              {% elif forloop.counter == 2 %}🥈
-              {% elif forloop.counter == 3 %}🥉
-              {% else %}#{{ forloop.counter }}{% endif %}
+              {% if forloop.counter == 1 %}🥇{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}#{{ forloop.counter }}{% endif %}
             </td>
             <td class="fw-bold">{{ p.nom }}</td>
-            <td class="text-center fw-bold text-warning">{{ p.collecte }}</td>
-            <td class="text-center {% if p.casses > 0 %}text-danger{% else %}text-success{% endif %}">{{ p.casses }}</td>
-            <td class="text-center {% if p.mortalite > 0 %}text-danger{% else %}text-success{% endif %}">{{ p.mortalite }}</td>
-            <td class="text-center">{{ p.soins }}</td>
-            <td class="text-center fw-bold">{{ p.score }}</td>
+            <td class="text-center fw-bold text-warning">{{ p.collecte_7d }}</td>
+            <td class="text-center d-none d-md-table-cell text-primary fw-bold">{{ p.moyenne_jour }}</td>
+            <td class="text-center d-none d-md-table-cell {% if p.casses_7d > 0 %}text-danger{% else %}text-success{% endif %}">{{ p.casses_7d }}</td>
+            <td class="text-center d-none d-md-table-cell {% if p.mortalite_7d > 0 %}text-danger{% else %}text-success{% endif %}">{{ p.mortalite_7d }}</td>
+            <td class="text-center d-none d-lg-table-cell text-muted small">
+              {{ p.collecte_total }} œufs<br>
+              <span class="text-danger">{{ p.mortalite_total }} morts</span>
+            </td>
+            <td class="text-center fw-bold fs-5">{{ p.score }}</td>
           </tr>
           {% empty %}
-          <tr><td colspan="7" class="text-center text-muted py-3">Aucun poulailler</td></tr>
+          <tr><td colspan="8" class="text-center text-muted py-3">Aucun poulailler</td></tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- KPIs DU JOUR ENRICHIS -->
+  <!-- LEGENDE SCORE -->
+  <div class="text-center mt-2 mb-4 px-3">
+    <small class="text-muted fst-italic bg-light p-2 rounded d-inline-block">
+      💡 <strong>Comment est calculé le Score ?</strong> (sur 7 jours) : 
+      <span class="text-success fw-bold">+1 pt / 10 œufs</span> • 
+      <span class="text-danger fw-bold">-5 pts / mortalité</span> • 
+      <span class="text-warning fw-bold">-2 pts / œuf cassé</span>. 
+      Plus le score est élevé, meilleur est le bâtiment !
+    </small>
+  </div>
+
+  <!-- KPIs DU JOUR (SIMPLIFIÉ & MOBILE FRIENDLY) -->
   <h4 class="section-title">📅 Aujourd'hui</h4>
   <div class="row g-3 mb-4">
-    
-    <!-- COLLECTE -->
     <div class="col-md-3 col-6">
-      <div class="card kpi-card p-3 h-100 position-relative">
+      <div class="card kpi-card p-3 h-100 border-0 shadow-sm position-relative">
         <div class="d-flex justify-content-between align-items-start mb-2">
-          <div style="font-size: 2.5rem;" class="text-warning">🥚</div>
+          <span style="font-size: 2rem;">🥚</span>
           {% if evol_collecte > 0 %}
             <span class="badge bg-success">▲ {{ evol_collecte }}%</span>
           {% elif evol_collecte < 0 %}
@@ -158,32 +187,17 @@
             <span class="badge bg-secondary">= 0%</span>
           {% endif %}
         </div>
-        <h6 class="text-muted mb-1">Collecte</h6>
-        <h2 class="fw-bold mb-1">{{ collecte_today }}</h2>
-        <small class="text-muted d-block">œufs ({{ plateaux_today }} plt)</small>
-        
-        <!-- Barre de progression vers objectif -->
-        {% with objectif=2000 %}
-        <div class="progress mt-2" style="height: 6px;" title="Objectif: {{ objectif }} œufs">
-          <div class="progress-bar bg-warning" role="progressbar" 
-               style="width: {% widthratio collecte_today objectif 100 %}%"
-               aria-valuenow="{{ collecte_today }}" aria-valuemin="0" aria-valuemax="{{ objectif }}">
-          </div>
-        </div>
-        <small class="text-muted d-block mt-1">{% widthratio collecte_today objectif 100 %}% de l'objectif</small>
-        {% endwith %}
-        
-        <a href="/rapport-jour/" class="stretched-link" style="z-index: 1;"></a>
+        <h6 class="text-muted mb-1 small text-uppercase fw-bold">Collecte</h6>
+        <h2 class="fw-bold mb-0 text-dark">{{ collecte_today }}</h2>
+        <small class="text-muted">œufs ({{ plateaux_today }} plt)</small>
+        <a href="/rapport-jour/" class="stretched-link"></a>
       </div>
     </div>
-    
-    <!-- CASSÉS -->
     <div class="col-md-3 col-6">
-      <div class="card kpi-card p-3 h-100 position-relative">
+      <div class="card kpi-card p-3 h-100 border-0 shadow-sm">
         <div class="d-flex justify-content-between align-items-start mb-2">
-          <div style="font-size: 2.5rem;" class="text-danger">💔</div>
+          <span style="font-size: 2rem;">💔</span>
           {% if collecte_today > 0 %}
-            {% with taux_casse=casses_today|floatformat:0 %}
             {% if casses_today == 0 %}
               <span class="badge bg-success">✅ Parfait</span>
             {% elif casses_today < 10 %}
@@ -191,60 +205,35 @@
             {% else %}
               <span class="badge bg-danger">❌ {{ casses_today }}</span>
             {% endif %}
-            {% endwith %}
           {% endif %}
         </div>
-        <h6 class="text-muted mb-1">Cassés</h6>
-        <h2 class="fw-bold mb-1 text-danger">{{ casses_today }}</h2>
-        <small class="text-muted d-block">œufs perdus</small>
-        
-        {% if collecte_today > 0 %}
-        <div class="progress mt-2" style="height: 6px;" title="Taux de casse">
-          <div class="progress-bar bg-danger" role="progressbar" 
-               style="width: {% widthratio casses_today collecte_today 100 %}%">
-          </div>
-        </div>
-        <small class="text-muted d-block mt-1">{% widthratio casses_today collecte_today 100 %}% de casse</small>
-        {% endif %}
+        <h6 class="text-muted mb-1 small text-uppercase fw-bold">Cassés</h6>
+        <h2 class="fw-bold mb-0 text-danger">{{ casses_today }}</h2>
+        <small class="text-muted">œufs perdus</small>
       </div>
     </div>
-    
-    <!-- VENTES -->
     <div class="col-md-3 col-6">
-      <div class="card kpi-card p-3 h-100 position-relative">
+      <div class="card kpi-card p-3 h-100 border-0 shadow-sm position-relative">
         <div class="d-flex justify-content-between align-items-start mb-2">
-          <div style="font-size: 2.5rem;" class="text-success">💰</div>
+          <span style="font-size: 2rem;">💰</span>
           {% if ventes_today > 0 %}
             <span class="badge bg-success">{{ ventes_count }} vente{{ ventes_count|pluralize }}</span>
           {% else %}
             <span class="badge bg-secondary">Aucune</span>
           {% endif %}
         </div>
-        <h6 class="text-muted mb-1">Ventes</h6>
-        <h2 class="fw-bold mb-1 text-success">{{ ventes_today }}</h2>
-        <small class="text-muted d-block">FCFA</small>
-        
-        <!-- Objectif ventes -->
-        {% with objectif_vente=150000 %}
-        <div class="progress mt-2" style="height: 6px;" title="Objectif: {{ objectif_vente }} FCFA">
-          <div class="progress-bar bg-success" role="progressbar" 
-               style="width: {% widthratio ventes_today objectif_vente 100 %}%">
-          </div>
-        </div>
-        <small class="text-muted d-block mt-1">{% widthratio ventes_today objectif_vente 100 %}% de l'objectif</small>
-        {% endwith %}
-        
-        <a href="/ventes/" class="stretched-link" style="z-index: 1;"></a>
+        <h6 class="text-muted mb-1 small text-uppercase fw-bold">Ventes</h6>
+        <h2 class="fw-bold mb-0 text-success">{{ ventes_today }}</h2>
+        <small class="text-muted">FCFA</small>
+        <a href="/ventes/" class="stretched-link"></a>
       </div>
     </div>
-    
-    <!-- BÉNÉFICE -->
     <div class="col-md-3 col-6">
-      <div class="card kpi-card p-3 h-100 position-relative">
+      <div class="card kpi-card p-3 h-100 border-0 shadow-sm position-relative">
         <div class="d-flex justify-content-between align-items-start mb-2">
-          <div style="font-size: 2.5rem;" class="{% if benefice_today >= 0 %}text-success{% else %}text-danger{% endif %}">
+          <span style="font-size: 2rem;" class="{% if benefice_today >= 0 %}text-success{% else %}text-danger{% endif %}">
             {% if benefice_today >= 0 %}📈{% else %}📉{% endif %}
-          </div>
+          </span>
           {% if benefice_today > 0 %}
             <span class="badge bg-success">✅ Positif</span>
           {% elif benefice_today == 0 %}
@@ -253,26 +242,14 @@
             <span class="badge bg-danger">❌ Négatif</span>
           {% endif %}
         </div>
-        <h6 class="text-muted mb-1">Bénéfice</h6>
-        <h2 class="fw-bold mb-1 {% if benefice_today >= 0 %}text-success{% else %}text-danger{% endif %}">
+        <h6 class="text-muted mb-1 small text-uppercase fw-bold">Bénéfice</h6>
+        <h2 class="fw-bold mb-0 {% if benefice_today >= 0 %}text-success{% else %}text-danger{% endif %}">
           {{ benefice_today }}
         </h2>
-        <small class="text-muted d-block">FCFA (CA - Dépenses)</small>
-        
-        <!-- Marge -->
-        {% if ventes_today > 0 %}
-        <div class="progress mt-2" style="height: 6px;" title="Marge sur ventes">
-          <div class="progress-bar {% if benefice_today >= 0 %}bg-success{% else %}bg-danger{% endif %}" 
-               role="progressbar" style="width: {% widthratio benefice_today ventes_today 100 %}%">
-          </div>
-        </div>
-        <small class="text-muted d-block mt-1">{% widthratio benefice_today ventes_today 100 %}% de marge</small>
-        {% endif %}
-        
-        <a href="/depenses/" class="stretched-link" style="z-index: 1;"></a>
+        <small class="text-muted">FCFA (CA - Dépenses)</small>
+        <a href="/depenses/" class="stretched-link"></a>
       </div>
     </div>
-    
   </div>
 
   <!-- ACTIONS RAPIDES -->
@@ -282,7 +259,6 @@
     <a href="/ventes/" class="btn btn-info text-white btn-lg fw-bold">💰 Historique Ventes</a>
     <a href="/depenses/" class="btn btn-danger btn-lg fw-bold">💸 Historique Dépenses</a>
     <a href="/rapport-jour/" class="btn btn-outline-info btn-lg fw-bold">📊 Rapport du jour</a>
-    <a href="/collecte/" class="btn btn-outline-warning btn-lg fw-bold">🥚 Nouvelle collecte</a>
     <a href="/admin/" class="btn btn-dark btn-lg fw-bold">⚙️ Administration</a>
   </div>
 

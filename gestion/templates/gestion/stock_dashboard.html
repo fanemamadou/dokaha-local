@@ -2,6 +2,32 @@
 {% load humanize %}
 
 {% block content %}
+
+
+</div>
+
+
+<div class="p-4 mb-4 rounded shadow-sm" style="background-color: #e0f7fa; border-left: 6px solid #00bcd4;">
+  <div class="d-flex align-items-start">
+    <div class="me-3" style="font-size: 2.5rem; line-height: 1;">🥚</div>
+    <div>
+      <h5 class="fw-bold mb-2" style="color: #006064; margin:0;">Gestion automatique des œufs</h5>
+      <p class="mb-2" style="color: #006064; font-size: 0.95rem;">
+        Le stock d'<strong>œufs</strong> est calculé automatiquement à partir des 
+        <strong>collectes quotidiennes</strong> et des <strong>ventes</strong>. 
+        Il n'est pas nécessaire de les saisir manuellement ici.
+      </p>
+      <p class="mb-0 small" style="color: #00838f;">
+        📊 Consultez le 
+        <a href="/dashboard/" style="color: #006064; font-weight: bold; text-decoration: underline;">Tableau de Bord</a> 
+        pour voir le stock d'œufs en temps réel.
+        <br><strong class="fs-5 mt-2 d-inline-block" style="color: #006064;">
+        </strong>
+      </p>
+    </div>
+  </div>
+</div>
+
 <div class="container-fluid py-4 px-3 px-lg-5">
     <!-- En-tête -->
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
@@ -123,3 +149,56 @@
 .text-truncate { max-width: 100%; overflow: hidden; white-space: nowrap; }
 </style>
 {% endblock %}
+
+
+
+
+
+
+
+
+
+
+<!-- Script pour masquer la carte Œufs (version 2) -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Méthode 1 : Chercher le chiffre "684 604"
+    var allElements = document.querySelectorAll('*');
+    for (var i = 0; i < allElements.length; i++) {
+        var txt = allElements[i].innerText;
+        if (txt && txt.indexOf('684 604') !== -1) {
+            // Remonter jusqu'au conteneur de carte
+            var card = allElements[i].closest('.card') || allElements[i].closest('.col-md-4') || allElements[i].closest('.col-lg-3') || allElements[i].closest('.col-sm-6');
+            if (!card) {
+                // Remonter 4 niveaux manuellement
+                card = allElements[i].parentElement;
+                if(card) card = card.parentElement;
+                if(card) card = card.parentElement;
+                if(card) card = card.parentElement;
+            }
+            if (card) {
+                card.style.display = 'none';
+                console.log('Carte Œufs masquée (méthode 684 604)');
+            }
+        }
+    }
+    
+    // Méthode 2 : Chercher "Stock de plateaux d'œufs"
+    for (var i = 0; i < allElements.length; i++) {
+        var txt = allElements[i].innerText;
+        if (txt && txt.indexOf('Stock de plateaux d\u0153ufs') !== -1) {
+            var card = allElements[i].closest('.card') || allElements[i].closest('.col-md-4') || allElements[i].closest('.col-lg-3') || allElements[i].closest('.col-sm-6');
+            if (!card) {
+                card = allElements[i].parentElement;
+                if(card) card = card.parentElement;
+                if(card) card = card.parentElement;
+                if(card) card = card.parentElement;
+            }
+            if (card) {
+                card.style.display = 'none';
+                console.log('Carte Œufs masquée (méthode texte)');
+            }
+        }
+    }
+});
+</script>
