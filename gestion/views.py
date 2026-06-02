@@ -694,3 +694,167 @@ def rapport_jour(request):
         't_mort': t_mort, 't_plt': t_plt, 't_oeufs': t_oeufs,
         'rapport_text': txt
     })
+
+
+def home_view(request):
+    return render(request, 'gestion/home.html')
+
+
+
+@login_required
+def dashboard_view(request):
+    """Dashboard V4 : Synchronisé avec ProductionOeufs (données réelles)"""
+    from django.utils import timezone
+    from django.db.models import Sum, Count
+    from datetime import timedelta
+    from django.shortcuts import render
+    
+    today = timezone.localtime(timezone.now()).date()
+    week_ago = today - timedelta(days=7)
+    
+    context = {'today': today, 'alertes': [], 'recommandations': []}
+    
+    try:
+        from gestion.models import ProductionOeufs, Vente, Depense, SortiePoules, Poulailler, Sante
+        
+        # Utilisation du placeholder nombre_oeufs
+        prod_total = ProductionOeufs.objects.aggregate(total=Sum('nombre_oeufs'))['total'] or 0
+        
+        ventes_oeufs_qte = 0
+        try:
+            ventes_oeufs_qte = Vente.objects.filter(type_vente__icontains='oeuf').aggregate(total=Sum('quantite'))['total'] or 0
+        except:
+            montant_ventes_oeufs = Vente.objects.filter(type_vente__icontains='oeuf').aggregate(total=Sum('montant_total'))['total'] or 0
+            ventes_oeufs_qte = int(montant_ventes_oeufs / 1500) * 30
+            
+        stock_disponible = max(0, int(prod_total) - int(ventes_oeufs_qte))
+        context['stock_plateaux'] = stock_disponible // 30
+        context['stock_oeufs'] = stock_disponible % 30
+        context['stock_total'] = stock_disponible
+        
+        prod_today = ProductionOeufs.objects.filter(date=today).aggregate(total=Sum('nombre_oeufs'))['total'] or 0
+        prod_yest = ProductionOeufs.objects.filter(date=today - timedelta(days=1)).aggregate(total=Sum('nombre_oeufs'))['total'] or 0
+        
+        v_today = Vente.objects.filter(date=today).aggregate(total=Sum('montant_total'), count=Count('id'))
+        d_today = Depense.objects.filter(date=today).aggregate(total=Sum('montant'))
+        m_today = SortiePoules.objects.filter(date=today, type_sortie='mortalite').aggregate(total=Sum('nombre'))
+        
+        context['collecte_today'] = int(prod_today)
+        context['plateaux_today'] = int(prod_today) // 30
+        context['casses_today'] = 0
+        context['ventes_today'] = int(v_today['total'] or 0)
+        context['ventes_count'] = int(v_today['count'] or 0)
+        context['depenses_today'] = int(d_today['total'] or 0)
+        context['mortalite_today'] = int(m_today['total'] or 0)
+        context['benefice_today'] = context['ventes_today'] - context['depenses_today']
+        
+        if int(prod_yest) > 0:
+            context['evol_collecte'] = round(((int(prod_today) - int(prod_yest)) / int(prod_yest)) * 100)
+        else:
+            context['evol_collecte'] = 0
+            
+        prod_week = ProductionOeufs.objects.filter(date__gte=week_ago).aggregate(total=Sum('nombre_oeufs'))['total'] or 0
+        v_week = Vente.objects.filter(date__gte=week_ago).aggregate(total=Sum('montant_total'))
+        d_week = Depense.objects.filter(date__gte=week_ago).aggregate(total=Sum('montant'))
+        m_week = SortiePoules.objects.filter(date__gte=week_ago, type_sortie='mortalite').aggregate(total=Sum('nombre'))
+        
+        context['collecte_week'] = int(prod_week)
+        context['ventes_week'] = int(v_week['total'] or 0)
+        context['depenses_week'] = int(d_week['total'] or 0)
+        context['mortalite_week'] = int(m_week['total'] or 0)
+        context['benefice_week'] = context['ventes_week'] - context['depenses_week']
+        
+        poulaillers_data = []
+        for p in Poulailler.objects.all():
+            try:
+                p_prod = ProductionOeufs.objects.filter(date__gte=week_ago, poulailler=p).aggregate(total=Sum('nombre_oeufs'))['total'] or 0
+            except:
+                p_prod = 0
+                
+            p_mort = SortiePoules.objects.filter(date__gte=week_ago, poulailler=p, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+            p_soins = Sante.objects.filter(date__gte=week_ago, poulailler=p).count()
+            
+            score = (int(p_prod) // 10) - (int(p_mort or 0) * 5)
+            
+            poulaillers_data.append({
+                'nom': p.nom,
+                'collecte': int(p_prod),
+                'casses': 0,
+                'mortalite': int(p_mort or 0),
+                'soins': p_soins,
+                'score': score,
+            })
+            
+        poulaillers_data.sort(key=lambda x: x['score'], reverse=True)
+        for i, p in enumerate(poulaillers_data, 1):
+            p['rang'] = i
+            p['medaille'] = '🥇' if i == 1 else '🥈' if i == 2 else '🥉' if i == 3 else '#' + str(i)
+            
+        context['poulaillers'] = poulaillers_data
+        
+        if context['mortalite_today'] >= 3:
+            context['alertes'].append({'type': 'danger', 'msg': "⚠️ Mortalité élevée aujourd'hui : " + str(context['mortalite_today']) + " sujets"})
+        if 0 < context['stock_total'] < 100:
+            context['alertes'].append({'type': 'warning', 'msg': "📦 Stock faible : seulement " + str(context['stock_total']) + " œufs disponibles"})
+            
+    except Exception as e:
+        context['error'] = str(e)
+        context['alertes'].append({'type': 'danger', 'msg': "Erreur chargement : " + str(e)})
+    
+    return render(request, 'gestion/dashboard.html', context)
+
+@login_required
+def historique_ventes(request):
+    """Historique détaillé des ventes avec crédits"""
+    from django.core.paginator import Paginator
+    from gestion.models import Vente
+    
+    ventes = Vente.objects.all().order_by('-date', '-id')
+    
+    # Pagination
+    paginator = Paginator(ventes, 50)  # 50 ventes par page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Totaux
+    total_ventes = ventes.aggregate(total=Sum('montant_total'))['total'] or 0
+    total_paye = ventes.aggregate(total=Sum('montant_paye'))['total'] or 0
+    total_reste = ventes.aggregate(total=Sum('montant_restant'))['total'] or 0
+    
+    context = {
+        'page_obj': page_obj,
+        'total_ventes': total_ventes,
+        'total_paye': total_paye,
+        'total_reste': total_reste,
+    }
+    return render(request, 'gestion/historique_ventes.html', context)
+
+@login_required
+def historique_depenses(request):
+    """Historique détaillé des dépenses"""
+    from django.core.paginator import Paginator
+    from gestion.models import Depense
+    
+    depenses = Depense.objects.all().order_by('-date', '-id')
+    
+    # Pagination
+    paginator = Paginator(depenses, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Totaux
+    total_depenses = depenses.aggregate(total=Sum('montant'))['total'] or 0
+    
+    # Stats par catégorie
+    from django.db.models import Count
+    categories_stats = depenses.values('categorie').annotate(
+        total=Sum('montant'),
+        count=Count('id')
+    ).order_by('-total')
+    
+    context = {
+        'page_obj': page_obj,
+        'total_depenses': total_depenses,
+        'categories_stats': categories_stats,
+    }
+    return render(request, 'gestion/historique_depenses.html', context)

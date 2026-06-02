@@ -1,8 +1,13 @@
+from django.views.generic import RedirectView
 from django.contrib import admin
 from django.urls import path
 from gestion import views
 
 urlpatterns = [
+    path('depenses/', views.historique_depenses, name='historique_depenses'),
+    path('ventes/', views.historique_ventes, name='historique_ventes'),
+    path('dashboard/', views.dashboard_view, name='dashboard'),
+    path('', views.home_view, name='home'),
     path('admin/', admin.site.urls),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('mortalite/ajouter/', views.mortalite_form, name='mortalite_form'),

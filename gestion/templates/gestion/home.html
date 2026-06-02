@@ -1,0 +1,287 @@
+{% extends "gestion/base.html" %}
+{% block content %}
+<style>
+/* Variables */
+:root {
+  --primary-green: #2d5016;
+  --secondary-green: #4a7c23;
+  --accent-yellow: #ffc107;
+  --light-bg: #f8f9fa;
+}
+
+/* Hero Section */
+.home-hero {
+  background: linear-gradient(rgba(45, 80, 22, 0.85), rgba(74, 124, 35, 0.85)),
+              url('https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=1920') center/cover;
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: white;
+  padding: 2rem 1rem;
+  margin-bottom: 3rem;
+}
+
+.home-hero h1 {
+  font-size: 3rem;
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.home-hero .subtitle {
+  font-size: 1.3rem;
+  margin-bottom: 1.5rem;
+  opacity: 0.95;
+}
+
+.home-hero .location {
+  display: inline-block;
+  background: rgba(255,255,255,0.2);
+  padding: 0.5rem 1.5rem;
+  border-radius: 50px;
+  font-size: 1rem;
+  margin-bottom: 2rem;
+}
+
+/* Access Cards */
+.access-section {
+  padding: 0 1rem 3rem;
+  margin-top: -4rem;
+  position: relative;
+  z-index: 10;
+}
+
+.access-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.access-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  transition: all 0.3s ease;
+  text-decoration: none;
+  color: inherit;
+}
+
+.access-card:hover {
+  transform: translateY(-10px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+}
+
+.access-card.terrain {
+  border-top: 5px solid var(--accent-yellow);
+}
+
+
+.access-card.dashboard {
+  border-top: 5px solid #17a2b8;
+}
+.dashboard h2 {
+  color: #17a2b8;
+}
+.dashboard .btn-access {
+  background: linear-gradient(45deg, #17a2b8, #138496);
+  color: white;
+}
+
+.access-card.admin {
+  border-top: 5px solid var(--primary-green);
+}
+
+.access-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.access-card h2 {
+  font-size: 1.8rem;
+  margin-bottom: 0.5rem;
+  color: var(--primary-green);
+}
+
+.access-card.terrain h2 {
+  color: #d39e00;
+}
+
+.access-card p {
+  color: #666;
+  font-size: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.btn-access {
+  display: inline-block;
+  padding: 0.8rem 2rem;
+  border-radius: 50px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.terrain .btn-access {
+  background: linear-gradient(45deg, var(--accent-yellow), #ff9800);
+  color: #000;
+}
+
+.admin .btn-access {
+  background: linear-gradient(45deg, var(--primary-green), var(--secondary-green));
+  color: white;
+}
+
+.access-card:hover .btn-access {
+  transform: scale(1.05);
+}
+
+/* Features Section */
+.features-section {
+  padding: 4rem 1rem;
+  background: var(--light-bg);
+}
+
+.features-section h2 {
+  text-align: center;
+  font-size: 2.2rem;
+  color: var(--primary-green);
+  margin-bottom: 3rem;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.feature-item {
+  background: white;
+  padding: 2rem;
+  border-radius: 15px;
+  text-align: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+.feature-item .icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+
+.feature-item h3 {
+  color: var(--secondary-green);
+  margin-bottom: 0.8rem;
+  font-size: 1.2rem;
+}
+
+/* Footer */
+.home-footer {
+  background: var(--primary-green);
+  color: white;
+  text-align: center;
+  padding: 2rem 1rem;
+  margin-top: 3rem;
+}
+
+.home-footer .contact-info {
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .home-hero h1 { font-size: 2.2rem; }
+  .home-hero .subtitle { font-size: 1.1rem; }
+  .access-grid { grid-template-columns: 1fr; }
+  .features-grid { grid-template-columns: 1fr; }
+}
+</style>
+
+<!-- Hero Section -->
+<section class="home-hero">
+  <div>
+    <h1>🐔 TROPIC VOLAILLE</h1>
+    <p class="subtitle">Ferme Avicole de Qualité à Dokaha</p>
+    <div class="location">📍 Korhogo, Côte d'Ivoire</div>
+    <p style="font-size: 1.1rem; max-width: 600px; margin: 0 auto;">
+      Élevage traditionnel et moderne pour une volaille savoureuse et saine
+    </p>
+  </div>
+</section>
+
+<!-- Access Section -->
+<section class="access-section">
+  <div class="access-grid">
+    <!-- Terrain Access -->
+    <a href="/terrain/" class="access-card terrain">
+      <span class="access-icon">📱</span>
+      <h2>SAISIE QUOTIDIENNE</h2>
+      <p>Interface de saisie pour l'équipe terrain</p>
+      <div class="btn-access">Accéder →</div>
+      <small class="d-block mt-2 text-muted">Pour la saisie quotidienne</small>
+    </a>
+
+    
+    <!-- Dashboard Access -->
+    <a href="/dashboard/" class="access-card dashboard">
+      <span class="access-icon">📊</span>
+      <h2>TABLEAU DE BORD</h2>
+      <p>Vue d'ensemble, statistiques et rapports</p>
+      <div class="btn-access">Accéder →</div>
+      <small class="d-block mt-2 text-muted">Pour gestionnaires & direction</small>
+    </a>
+
+    <!-- Admin Access -->
+    <a href="/admin/" class="access-card admin">
+      <span class="access-icon">⚙️</span>
+      <h2>ADMINISTRATION</h2>
+      <p>Gestion complète, stocks et rapports</p>
+      <div class="btn-access">Accéder →</div>
+      <small class="d-block mt-2 text-muted">Pour gestionnaires & direction</small>
+    </a>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section">
+  <h2>Nos Outils de Gestion</h2>
+  <div class="features-grid">
+    <div class="feature-item">
+      <div class="icon">🥚</div>
+      <h3>Collecte & Stock</h3>
+      <p>Suivi en temps réel de la production d'œufs et des stocks</p>
+    </div>
+    <div class="feature-item">
+      <div class="icon">🐓</div>
+      <h3>Cheptel & Santé</h3>
+      <p>Tracking des effectifs, mortalité et soins vétérinaires</p>
+    </div>
+    <div class="feature-item">
+      <div class="icon">💰</div>
+      <h3>Ventes & Finance</h3>
+      <p>Gestion des ventes, dépenses et trésorerie</p>
+    </div>
+    <div class="feature-item">
+      <div class="icon">📊</div>
+      <h3>Rapports Auto</h3>
+      <p>Génération automatique de rapports quotidiens</p>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="home-footer">
+  <div class="contact-info">
+    <strong>📍 Ferme Tropic Volaille - Dokaha, Korhogo</strong><br>
+    📞 Disponible 7j/7 | 🕐 Lun-Sam: 6h-18h, Dim: 7h-12h
+  </div>
+  <p class="mb-0">&copy; 2026 Tropic Volaille • Système DOKAHA v1.0 • Côte d'Ivoire 🇨</p>
+</footer>
+{% endblock %}
