@@ -11,6 +11,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('mortalite/ajouter/', views.mortalite_form, name='mortalite_form'),
+    path('vente/choix/', views.vente_choice, name='vente_choice'),
     path('vente/', views.vente_list, name='vente_list'),
     path('vente/add/', views.vente_choice, name='vente_choice'),
     path('stock/', views.stock_dashboard, name='stock_dashboard'),

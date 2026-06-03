@@ -1,4 +1,5 @@
-{% extends "gestion/base.html" %}
+
+        {% extends "gestion/base.html" %}
 {% block content %}
 <div class="container-fluid px-2 px-md-4 mt-2 mt-md-4">
     <!-- 📊 KPIs TERRAIN -->
@@ -21,7 +22,7 @@
     <div class="row g-2 g-md-3">
         <div class="col-6 col-md-3"><a href="/mortalite/ajouter/" class="btn btn-danger w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">💀</span><span class="fw-bold">MORTALITÉ</span><small class="opacity-75">Saisir pertes</small></a></div>
         <div class="col-6 col-md-3"><a href="/collecte/" class="btn btn-warning w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-dark"><span class="fs-1 mb-1"></span><span class="fw-bold">COLLECTE</span><small class="opacity-75">ufs du jour</small></a></div>
-        <div class="col-6 col-md-3"><a href="/vente/oeufs/" class="btn btn-success w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1"></span><span class="fw-bold">VENTE</span><small class="opacity-75">Enregistrer</small></a></div>
+        <div class="col-6 col-md-3"><a href="/vente/choix/" class="btn btn-success w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">💰</span><span class="fw-bold">VENTES</span><small class="opacity-75">Œufs / Poulets / Autres</small></a></div>
         <div class="col-6 col-md-3"><a href="/stock/" class="btn btn-info w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">📦</span><span class="fw-bold">STOCK</span><small class="opacity-75">Aliments/Vaccins</small></a></div>
         <div class="col-6 col-md-3"><a href="/cheptel/" class="btn btn-primary w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">🐔</span><span class="fw-bold">CHEPTEL</span><small class="opacity-75">Effectif réel</small></a></div>
         <div class="col-6 col-md-3"><a href="/depense/add/" class="btn btn-dark w-100 py-4 shadow-sm d-flex flex-column align-items-center justify-content-center text-white"><span class="fs-1 mb-1">💸</span><span class="fw-bold">DÉPENSES</span><small class="opacity-75">Achat/Transport</small></a></div>
