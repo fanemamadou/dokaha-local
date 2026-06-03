@@ -13,10 +13,14 @@ class Poulailler(models.Model):
 class ProductionOeufs(models.Model):
     date = models.DateField(default=timezone.now)
     poulailler = models.ForeignKey(Poulailler, on_delete=models.CASCADE)
-    nombre_oeufs = models.IntegerField()
+    plateaux = models.IntegerField(default=0)
+    oeufs_unites = models.IntegerField(default=0)
+    total_oeufs = models.IntegerField(default=0)
+    nombre_oeufs = models.IntegerField(default=0)  # Conservé temporairement pour la migration des données
     oeufs_casses = models.IntegerField(default=0)
+    
     def __str__(self):
-        return f"{self.date} - {self.nombre_oeufs} œufs"
+        return f"{self.date} - {self.total_oeufs} œufs" 
 
 class Vente(models.Model):
     poulailler = models.ForeignKey(Poulailler, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Bâtiment")
@@ -219,14 +223,3 @@ class SanteRecord(models.Model):
 
 
 
-class Collecte(models.Model):
-    """Collecte quotidienne d'œufs par poulailler"""
-    date = models.DateField()
-    poulailler = models.ForeignKey('gestion.Poulailler', on_delete=models.SET_NULL, null=True, blank=True)
-    plateaux = models.IntegerField(default=0)
-    oeufs_unites = models.IntegerField(default=0)
-    total_oeufs = models.IntegerField(default=0)
-    oeufs_casses = models.IntegerField(default=0)
-
-    def __str__(self): return f"Collecte {self.date}"
-    class Meta: ordering = ['-date']

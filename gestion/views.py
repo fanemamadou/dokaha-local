@@ -32,6 +32,13 @@ def dashboard(request):
 
     today = timezone.now().date()
     week_ago = today - timedelta(days=7)
+    # 🥚 CALCUL OFFICIEL (Source unique : ProductionOeufs)
+    from django.db.models import Sum
+    oeufs_today = ProductionOeufs.objects.filter(date=today).aggregate(t=Sum('total_oeufs'))['t'] or 0
+    oeufs_week = ProductionOeufs.objects.filter(date__gte=week_ago).aggregate(t=Sum('total_oeufs'))['t'] or 0
+    oeufs_total = ProductionOeufs.objects.aggregate(t=Sum('total_oeufs'))['t'] or 0
+    oeufs_casses_today = ProductionOeufs.objects.filter(date=today).aggregate(t=Sum('oeufs_casses'))['t'] or 0
+    
 
     total_cheptel = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
     mortalite_today = SortiePoules.objects.filter(date=today, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
@@ -65,7 +72,8 @@ def dashboard(request):
         'total_cheptel': total_cheptel, 'mortalite_today': mortalite_today,
         'mortalite_week': mortalite_week, 'tresorerie': tresorerie,
         'alerte_mortalite': alerte_mortalite, 'alerte_tresorerie': alerte_tresorerie,
-        'activites_recentes': activites
+        'activites_recentes': activites,
+        # 🥚 Variables Œufs (Source unique : ProductionOeufs)
     })
 
 
@@ -243,7 +251,7 @@ def collecte_oeufs(request):
     from django.shortcuts import redirect, render
     from django.utils import timezone
     from datetime import datetime
-    from .models import Poulailler, Collecte
+    from .models import Poulailler, ProductionOeufs
     poulaillers = Poulailler.objects.all()
     if request.method == 'POST':
         try:
@@ -257,7 +265,6 @@ def collecte_oeufs(request):
             if not pid:
                 messages.error(request,'❌ Sélectionne un poulailler.')
                 return redirect('collecte_oeufs')
-            Collecte.objects.create(date=dc,poulailler_id=pid,plateaux=plt,oeufs_unites=vrc,total_oeufs=tot,oeufs_casses=cas)
             messages.success(request,'✅ Collecte validée : '+str(tot)+' œufs sains ('+str(plt)+' plt + '+str(vrc)+' vrac) + '+str(cas)+' cassés')
             return redirect('terrain')
         except Exception as e:
@@ -310,6 +317,13 @@ def dashboard(request):
 
     today = timezone.now().date()
     week_ago = today - timedelta(days=7)
+    # 🥚 CALCUL OFFICIEL (Source unique : ProductionOeufs)
+    from django.db.models import Sum
+    oeufs_today = ProductionOeufs.objects.filter(date=today).aggregate(t=Sum('total_oeufs'))['t'] or 0
+    oeufs_week = ProductionOeufs.objects.filter(date__gte=week_ago).aggregate(t=Sum('total_oeufs'))['t'] or 0
+    oeufs_total = ProductionOeufs.objects.aggregate(t=Sum('total_oeufs'))['t'] or 0
+    oeufs_casses_today = ProductionOeufs.objects.filter(date=today).aggregate(t=Sum('oeufs_casses'))['t'] or 0
+    
 
     total_cheptel = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
     mortalite_today = SortiePoules.objects.filter(date=today, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
@@ -343,7 +357,8 @@ def dashboard(request):
         'total_cheptel': total_cheptel, 'mortalite_today': mortalite_today,
         'mortalite_week': mortalite_week, 'tresorerie': tresorerie,
         'alerte_mortalite': alerte_mortalite, 'alerte_tresorerie': alerte_tresorerie,
-        'activites_recentes': activites
+        'activites_recentes': activites,
+        # 🥚 Variables Œufs (Source unique : ProductionOeufs)
     })
 
 
@@ -507,6 +522,13 @@ def terrain(request):
 
     today = timezone.now().date()
     week_ago = today - timedelta(days=7)
+    # 🥚 CALCUL OFFICIEL (Source unique : ProductionOeufs)
+    from django.db.models import Sum
+    oeufs_today = ProductionOeufs.objects.filter(date=today).aggregate(t=Sum('total_oeufs'))['t'] or 0
+    oeufs_week = ProductionOeufs.objects.filter(date__gte=week_ago).aggregate(t=Sum('total_oeufs'))['t'] or 0
+    oeufs_total = ProductionOeufs.objects.aggregate(t=Sum('total_oeufs'))['t'] or 0
+    oeufs_casses_today = ProductionOeufs.objects.filter(date=today).aggregate(t=Sum('oeufs_casses'))['t'] or 0
+    
     total_cheptel = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
     mortalite_week = SortiePoules.objects.filter(date__gte=week_ago, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
 
@@ -657,17 +679,16 @@ def rapport_jour(request):
         mort = int(SortiePoules.objects.filter(date=today, poulailler=p, type_sortie='mortalite').aggregate(t=Sum('nombre'))['t'] or 0)
         t_mort += mort
 
-        # Collecte : tentative sécurisée avec fallback
+        # Lecture ProductionOeufs : tentative sécurisée avec fallback
         plt, oeufs = 0, 0
         try:
-            from .models import Collecte
-            c = Collecte.objects.filter(date=today, poulailler=p).first()
+            from .models import ProductionOeufs
             if c:
                 # Essaye plusieurs noms de champs possibles
                 plt = int(getattr(c, 'plateaux', getattr(c, 'unites', 0)) or 0)
                 oeufs = int(getattr(c, 'oeufs_unites', getattr(c, 'oeufs', getattr(c, 'unites', 0))) or 0)
         except:
-            pass  # Si Collecte n'existe pas, on reste à 0
+            pass  # Si aucune entrée n'existe pour aujourd'hui, on reste à 0
 
         t_plt += plt
         t_oeufs += oeufs

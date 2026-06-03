@@ -1,6 +1,5 @@
 from django.contrib import admin
-from .models import (
-    ProductionOeufs, Vente, Depense, Poulailler, 
+from .models import (ProductionOeufs, Vente, Depense, Poulailler, 
     CategorieStock, MouvementStock, Produit,
     Client, LotPoules, MouvementCheptel, SortiePoules,
     Sante, AlertesStock
@@ -19,3 +18,7 @@ admin.site.register(MouvementCheptel)
 admin.site.register(SortiePoules)
 admin.site.register(Sante)
 admin.site.register(AlertesStock)
+
+
+# 🥚 Gestion des collectes d'œufs
+
