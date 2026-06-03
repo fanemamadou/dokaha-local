@@ -40,12 +40,16 @@ def dashboard(request):
     oeufs_casses_today = ProductionOeufs.objects.filter(date=today).aggregate(t=Sum('oeufs_casses'))['t'] or 0
     
 
-    total_cheptel = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
+    # 🐔 Cheptel réel = Initial - Morts - Vendus (Source unique de vérité)
+    total_initial = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
+    total_morts = SortiePoules.objects.filter(type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+    total_vendus = Vente.objects.filter(type_vente='poules').aggregate(total=Sum('unites'))['total'] or 0
+    total_cheptel = max(0, int(total_initial) - int(total_morts) - int(total_vendus))
     mortalite_today = SortiePoules.objects.filter(date=today, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
     mortalite_week = SortiePoules.objects.filter(date__gte=week_ago, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
 
     try:
-        total_recettes = Vente.objects.aggregate(total=Sum('montant_total'))['total'] or 0
+        total_recettes = Vente.objects.aggregate(total=Sum('montant_paye'))['total'] or 0
         total_depenses = Depense.objects.aggregate(total=Sum('montant'))['total'] or 0
     except:
         total_recettes = 0
@@ -325,12 +329,15 @@ def dashboard(request):
     oeufs_casses_today = ProductionOeufs.objects.filter(date=today).aggregate(t=Sum('oeufs_casses'))['t'] or 0
     
 
-    total_cheptel = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
+    total_initial = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
+    total_morts = SortiePoules.objects.filter(type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+    total_vendus = Vente.objects.filter(type_vente='poules').aggregate(total=Sum('unites'))['total'] or 0
+    total_cheptel = max(0, int(total_initial) - int(total_morts) - int(total_vendus))
     mortalite_today = SortiePoules.objects.filter(date=today, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
     mortalite_week = SortiePoules.objects.filter(date__gte=week_ago, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
 
     try:
-        total_recettes = Vente.objects.aggregate(total=Sum('montant_total'))['total'] or 0
+        total_recettes = Vente.objects.aggregate(total=Sum('montant_paye'))['total'] or 0
         total_depenses = Depense.objects.aggregate(total=Sum('montant'))['total'] or 0
     except:
         total_recettes = 0
@@ -448,7 +455,7 @@ def finance_dashboard(request):
     elif start: qs_v, qs_d = qs_v.filter(date__gte=start), qs_d.filter(date__gte=start)
     elif end: qs_v, qs_d = qs_v.filter(date__lte=end), qs_d.filter(date__lte=end)
 
-    tr = int(qs_v.aggregate(t=Sum('montant_total'))['t'] or 0)
+    tr = int(qs_v.aggregate(t=Sum('montant_paye'))['t'] or 0)
     td = int(qs_d.aggregate(t=Sum('montant'))['t'] or 0)
 
     labels, data = [], []
@@ -484,7 +491,7 @@ def finance_export_excel(request):
 
     ws_rc = wb.create_sheet("Récap")
     ws_rc.append(["INDICATEUR", "VALEUR"]); ws_rc['A1'].font = Font(bold=True)
-    tr = int(Vente.objects.aggregate(t=Sum('montant_total'))['t'] or 0)
+    tr = int(Vente.objects.aggregate(t=Sum('montant_paye'))['t'] or 0)
     td = int(Depense.objects.aggregate(t=Sum('montant'))['t'] or 0)
     ws_rc.append(["Total Recettes", tr]); ws_rc.append(["Total Dépenses", td]); ws_rc.append(["Trésorerie", tr-td])
 
@@ -513,11 +520,14 @@ def terrain(request):
     oeufs_total = ProductionOeufs.objects.aggregate(t=Sum('total_oeufs'))['t'] or 0
     oeufs_casses_today = ProductionOeufs.objects.filter(date=today).aggregate(t=Sum('oeufs_casses'))['t'] or 0
     
-    total_cheptel = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
+    total_initial = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
+    total_morts = SortiePoules.objects.filter(type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+    total_vendus = Vente.objects.filter(type_vente='poules').aggregate(total=Sum('unites'))['total'] or 0
+    total_cheptel = max(0, int(total_initial) - int(total_morts) - int(total_vendus))
     mortalite_week = SortiePoules.objects.filter(date__gte=week_ago, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
 
     try:
-        tr = Vente.objects.aggregate(t=Sum('montant_total'))['t'] or 0
+        tr = Vente.objects.aggregate(t=Sum('montant_paye'))['t'] or 0
         td = Depense.objects.aggregate(t=Sum('montant'))['t'] or 0
     except: tr = td = 0
 
