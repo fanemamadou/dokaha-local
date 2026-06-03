@@ -495,22 +495,6 @@ def finance_export_excel(request):
 
 
 @login_required
-def cheptel(request):
-    """Vue terrain : effectif réel par poulailler"""
-    from .models import Poulailler, SortiePoules, Vente
-    from django.db.models import Sum
-    from django.shortcuts import render
-
-    poulaillers = []
-    for p in Poulailler.objects.all():
-        effectif = p.effectif_initial or 0
-        mortalite = SortiePoules.objects.filter(poulailler=p, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
-        ventes = Vente.objects.filter(poulailler=p, type_vente='poulets').aggregate(total=Sum('unites'))['total'] or 0
-        effectif_reel = max(0, effectif - mortalite - int(ventes or 0))
-        poulaillers.append({'nom': p.nom, 'initial': effectif, 'mortalite': int(mortalite or 0), 'vendus': int(ventes or 0), 'reel': effectif_reel, 'alerte': effectif_reel < (effectif * 0.8) if effectif > 0 else False})
-
-    return render(request, 'gestion/cheptel.html', {'poulaillers': poulaillers, 'total_reel': sum(p['reel'] for p in poulaillers)})
-
 @login_required
 def terrain(request):
     """Interface terrain pour Flatie"""
