@@ -143,4 +143,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 USE_L10N = True  # Format dates/nombres FR
 
-LOGIN_URL = '/admin/login/'
+LOGIN_URL = '/login/'
+
+# Autoriser le logout via GET (bouton simple)
+LOGOUT_ALLOW_GET = True

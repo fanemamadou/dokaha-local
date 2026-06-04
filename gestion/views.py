@@ -1,3 +1,4 @@
+from django.contrib.auth import logout
 from django.shortcuts import render, redirect
 from datetime import datetime
 from django.contrib.auth.decorators import login_required
@@ -13,13 +14,6 @@ from .forms import StockEntreeForm, StockSortieForm
 # 📦 VUES STOCK (placeholders garantis fonctionnels)
 # =============================================================================
 @login_required
-def stock_historique(request):
-    """Historique des mouvements Stock"""
-    return render(request, 'gestion/base.html', {'title': '📜 Historique Stock', 'user': request.user})
-
-# =============================================================================
-# 🎯 AUTRES VUES (placeholders si absentes)
-# =============================================================================
 
 @login_required
 def dashboard(request):
@@ -163,8 +157,16 @@ def acces_refuse(request):
 
 # 📦 VUES STOCK - Ajoutées proprement (ne pas toucher)
 @login_required
+@login_required
 def stock_historique(request):
-    return render(request, 'gestion/base.html', {'title': '📜 Historique Stock', 'user': request.user})
+    """Historique réel des mouvements de stock"""
+    from .models import MouvementStock
+    mouvements = MouvementStock.objects.all().order_by('-date')
+    return render(request, 'gestion/stock_historique.html', {
+        'title': '📜 Historique des Mouvements de Stock',
+        'mouvements': mouvements,
+        'user': request.user
+    })
 @login_required
 @login_required
 def stock_ajouter(request):
@@ -895,3 +897,9 @@ def dashboard_view(request):
         context['alertes'].append({'type': 'danger', 'msg': "⚠️ Erreur de chargement : " + str(e)})
 
     return render(request, 'gestion/dashboard.html', context)
+
+
+def custom_logout(request):
+    """Gère la déconnexion et redirige vers le formulaire de connexion"""
+    logout(request)
+    return redirect('/login/')
