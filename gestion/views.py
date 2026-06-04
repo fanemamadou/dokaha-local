@@ -72,6 +72,10 @@ def dashboard(request):
         'alerte_mortalite': alerte_mortalite, 'alerte_tresorerie': alerte_tresorerie,
         'activites_recentes': activites,
         # 🥚 Variables Œufs (Source unique : ProductionOeufs)
+        'oeufs_today': oeufs_today, 'oeufs_week': oeufs_week, 'oeufs_total': oeufs_total,
+        'oeufs_casses_today': oeufs_casses_today,
+        # 📦 Stock
+        'stock_plateaux': stock_plateaux, 'stock_oeufs': stock_oeufs, 'stock_total': stock_total,
     })
 
 
@@ -313,62 +317,135 @@ def mortalite_form(request):
 
 
 @login_required
+@login_required
 def dashboard(request):
-    """Dashboard: KPIs + Actions + Activité Récente"""
-    from .models import Poulailler, Vente, Depense, SortiePoules
-    from django.db.models import Sum
+    """Dashboard V8 : Performance 7 jours + Total Historique + Moyenne"""
     from django.utils import timezone
+    from django.db.models import Sum, Count
     from datetime import timedelta
     from django.shortcuts import render
+    from gestion.models import ProductionOeufs, Vente, Depense, SortiePoules, Poulailler, Sante
 
-    today = timezone.now().date()
+    today = timezone.localtime(timezone.now()).date()
     week_ago = today - timedelta(days=7)
-    # 🥚 CALCUL OFFICIEL (Source unique : ProductionOeufs)
-    from django.db.models import Sum
-    oeufs_today = ProductionOeufs.objects.filter(date=today).aggregate(t=Sum('total_oeufs'))['t'] or 0
-    oeufs_week = ProductionOeufs.objects.filter(date__gte=week_ago).aggregate(t=Sum('total_oeufs'))['t'] or 0
-    oeufs_total = ProductionOeufs.objects.aggregate(t=Sum('total_oeufs'))['t'] or 0
-    oeufs_casses_today = ProductionOeufs.objects.filter(date=today).aggregate(t=Sum('oeufs_casses'))['t'] or 0
-    
 
-    total_initial = Poulailler.objects.aggregate(total=Sum('effectif_initial'))['total'] or 0
-    total_morts = SortiePoules.objects.filter(type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
-    total_vendus = Vente.objects.filter(type_vente='poules').aggregate(total=Sum('unites'))['total'] or 0
-    total_cheptel = max(0, int(total_initial) - int(total_morts) - int(total_vendus))
-    mortalite_today = SortiePoules.objects.filter(date=today, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
-    mortalite_week = SortiePoules.objects.filter(date__gte=week_ago, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+    context = {'today': today, 'alertes': [], 'recommandations': []}
+    from django.utils import timezone
+    from django.db.models import Sum, Count
+    from datetime import timedelta
+    from django.shortcuts import render
+    from gestion.models import ProductionOeufs, Vente, Depense, SortiePoules, Poulailler, Sante
+
+    today = timezone.localtime(timezone.now()).date()
+    week_ago = today - timedelta(days=7)
+
+    context = {'today': today, 'alertes': [], 'recommandations': []}
 
     try:
-        total_recettes = Vente.objects.aggregate(total=Sum('montant_paye'))['total'] or 0
-        total_depenses = Depense.objects.aggregate(total=Sum('montant'))['total'] or 0
-    except:
-        total_recettes = 0
-        try: total_depenses = Depense.objects.aggregate(total=Sum('montant_total'))['total'] or 0
-        except: total_depenses = 0
+        # 1. STOCK RÉEL
+        prod_total = ProductionOeufs.objects.aggregate(total=Sum('nombre_oeufs'))['total'] or 0
+        try:
+            ventes_oeufs_unites = Vente.objects.filter(type_vente__icontains='oeuf').aggregate(total=Sum('unites'))['total'] or 0
+        except:
+            ventes_oeufs_unites = 0
 
-    tresorerie = total_recettes - total_depenses
-    alerte_mortalite = mortalite_week > (total_cheptel * 0.02) if total_cheptel > 0 else False
-    alerte_tresorerie = tresorerie < 0
+        stock_disponible = max(0, int(prod_total) - int(ventes_oeufs_unites))
+        context['stock_plateaux'] = stock_disponible // 30
+        context['stock_oeufs'] = stock_disponible % 30
+        context['stock_total'] = stock_disponible
 
-    # 📜 Activité Récente (mix Ventes + Mortalités)
-    activites = []
-    try:
-        for v in Vente.objects.order_by('-date')[:3]:
-            activites.append({'date': v.date, 'type': '💰 Vente', 'detail': f"{v.type_vente} - {v.montant_total:,.0f} F", 'info': v.client or 'N/A'})
-        for m in SortiePoules.objects.filter(type_sortie='mortalite').order_by('-date')[:2]:
-            activites.append({'date': m.date, 'type': '💀 Mortalité', 'detail': f"{m.nombre} sujets", 'info': 'Cheptel'})
-        activites.sort(key=lambda x: x['date'], reverse=True)
-        activites = activites[:5]
-    except:
-        activites = []
+        # 2. KPIs DU JOUR
+        prod_today = ProductionOeufs.objects.filter(date=today).aggregate(total=Sum('nombre_oeufs'), casses=Sum('oeufs_casses'))
+        prod_yest = ProductionOeufs.objects.filter(date=today - timedelta(days=1)).aggregate(total=Sum('nombre_oeufs'))['total'] or 0
 
-    return render(request, 'gestion/dashboard.html', {
-        'total_cheptel': total_cheptel, 'mortalite_today': mortalite_today,
-        'mortalite_week': mortalite_week, 'tresorerie': tresorerie,
-        'alerte_mortalite': alerte_mortalite, 'alerte_tresorerie': alerte_tresorerie,
-        'activites_recentes': activites,
-        # 🥚 Variables Œufs (Source unique : ProductionOeufs)
-    })
+        v_today = Vente.objects.filter(date=today).aggregate(total=Sum('montant_total'), count=Count('id'))
+        d_today = Depense.objects.filter(date=today).aggregate(total=Sum('montant'))
+        m_today = SortiePoules.objects.filter(date=today, type_sortie='mortalite').aggregate(total=Sum('nombre'))
+
+        context['collecte_today'] = int(prod_today['total'] or 0)
+        context['casses_today'] = int(prod_today['casses'] or 0)
+        context['plateaux_today'] = context['collecte_today'] // 30
+        context['ventes_today'] = int(v_today['total'] or 0)
+        context['ventes_count'] = int(v_today['count'] or 0)
+        context['depenses_today'] = int(d_today['total'] or 0)
+        context['mortalite_today'] = int(m_today['total'] or 0)
+        context['benefice_today'] = context['ventes_today'] - context['depenses_today']
+
+        if int(prod_yest) > 0:
+            context['evol_collecte'] = round(((context['collecte_today'] - int(prod_yest)) / int(prod_yest)) * 100)
+        else:
+            context['evol_collecte'] = 0
+
+        # 3. STATS SEMAINE
+        prod_week = ProductionOeufs.objects.filter(date__gte=week_ago).aggregate(total=Sum('nombre_oeufs'), casses=Sum('oeufs_casses'))
+        v_week = Vente.objects.filter(date__gte=week_ago).aggregate(total=Sum('montant_total'))
+        d_week = Depense.objects.filter(date__gte=week_ago).aggregate(total=Sum('montant'))
+        m_week = SortiePoules.objects.filter(date__gte=week_ago, type_sortie='mortalite').aggregate(total=Sum('nombre'))
+
+        context['collecte_week'] = int(prod_week['total'] or 0)
+        context['casses_week'] = int(prod_week['casses'] or 0)
+        context['ventes_week'] = int(v_week['total'] or 0)
+        context['depenses_week'] = int(d_week['total'] or 0)
+        context['mortalite_week'] = int(m_week['total'] or 0)
+        context['benefice_week'] = context['ventes_week'] - context['depenses_week']
+
+        # 4. CLASSEMENT POULAILLERS (7 jours + Historique Total)
+        poulaillers_data = []
+        for p in Poulailler.objects.all():
+            # Stats 7 jours
+            p_7d = ProductionOeufs.objects.filter(date__gte=week_ago, poulailler=p).aggregate(total=Sum('nombre_oeufs'), casses=Sum('oeufs_casses'))
+            # Stats Historique Total
+            p_all = ProductionOeufs.objects.filter(poulailler=p).aggregate(total=Sum('nombre_oeufs'), casses=Sum('oeufs_casses'))
+
+            p_prod_7d = int(p_7d['total'] or 0)
+            p_casses_7d = int(p_7d['casses'] or 0)
+            p_prod_all = int(p_all['total'] or 0)
+            p_casses_all = int(p_all['casses'] or 0)
+
+            p_mort_7d = SortiePoules.objects.filter(date__gte=week_ago, poulailler=p, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+            p_mort_all = SortiePoules.objects.filter(poulailler=p, type_sortie='mortalite').aggregate(total=Sum('nombre'))['total'] or 0
+
+            p_soins_7d = Sante.objects.filter(date__gte=week_ago, poulailler=p).count()
+
+            # Moyenne par jour sur 7 jours
+            moyenne_jour = round(p_prod_7d / 7, 1) if p_prod_7d > 0 else 0
+
+            # Score basé sur les 7 derniers jours (récompense la performance récente)
+            score = (p_prod_7d // 10) - (int(p_mort_7d or 0) * 5) - (p_casses_7d * 2)
+
+            poulaillers_data.append({
+                'nom': p.nom,
+                'collecte_7d': p_prod_7d,
+                'casses_7d': p_casses_7d,
+                'mortalite_7d': int(p_mort_7d or 0),
+                'soins_7d': p_soins_7d,
+                'collecte_total': p_prod_all,
+                'casses_total': p_casses_all,
+                'mortalite_total': int(p_mort_all or 0),
+                'moyenne_jour': moyenne_jour,
+                'score': score,
+            })
+
+        poulaillers_data.sort(key=lambda x: x['score'], reverse=True)
+        for i, p in enumerate(poulaillers_data, 1):
+            p['rang'] = i
+            p['medaille'] = '🥇' if i == 1 else '🥈' if i == 2 else '🥉' if i == 3 else '4️⃣' if i == 4 else '5️⃣'
+
+        context['poulaillers'] = poulaillers_data
+
+        # 5. ALERTES
+        if context['mortalite_today'] >= 3:
+            context['alertes'].append({'type': 'danger', 'msg': "⚠️ Mortalité élevée aujourd'hui : " + str(context['mortalite_today']) + " sujets"})
+        if 0 < context['stock_total'] < 100:
+            context['alertes'].append({'type': 'warning', 'msg': "📦 Stock faible : seulement " + str(context['stock_total']) + " œufs disponibles"})
+        if context['collecte_today'] > 0 and (context['casses_today'] / context['collecte_today']) > 0.05:
+            context['alertes'].append({'type': 'warning', 'msg': "💔 Taux de casse élevé aujourd'hui : " + str(round((context['casses_today']/context['collecte_today'])*100, 1)) + "%"})
+
+    except Exception as e:
+        context['error'] = str(e)
+        context['alertes'].append({'type': 'danger', 'msg': "⚠️ Erreur de chargement : " + str(e)})
+
+    return render(request, 'gestion/dashboard.html', context)
 
 
 @login_required
